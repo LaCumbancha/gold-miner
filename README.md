@@ -7,6 +7,19 @@ Raña, Cristian Ezequiel (padrón 95457)
 #### Fecha de Entrega
 Miércoles 4 de Septiembre de 2019
 
+## Bootstrapping
+El presente proyecto utiliza el gestor de dependencias y paquetes **Cargo**. Para instalarlo:
+```bash
+sudo apt-get update
+sudo apt-get upgrade
+curl https://sh.rustup.rs -sSf | sh
+``` 
+
+Una vez con Cargo en el sistema, ejecutamos el siguiente comando en el directorio raíz del proyecto:
+```bash
+cargo run
+```
+
 ## Enunciado
 
 #### Objetivo
