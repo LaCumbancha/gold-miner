@@ -28,7 +28,7 @@ pub fn run() {
                     2 => {
                         let (new_zones, new_miners) = settings_menu(zones, miners);
                         zones = new_zones;
-                        miners = new_miners
+                        miners = new_miners;
                     },
                     _ => {
                         print!("Wrong option! Retry: ");
