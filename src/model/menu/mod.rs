@@ -4,8 +4,13 @@ use std::io;
 use std::io::Write;
 use std::num::ParseIntError;
 
+static DEFAULT_ZONES: u32 = 5;
+static DEFAULT_MINERS: u32 = 33;
+
 pub fn run() {
     let mut exit_option: bool = false;
+    let mut zones: u32 = DEFAULT_ZONES;
+    let mut miners: u32 = DEFAULT_MINERS;
 
     while !exit_option {
         display_main_menu();
@@ -15,12 +20,14 @@ pub fn run() {
                 match value {
                     0 => {
                         exit_option = true;
+                        println!("Thanks for playing Gold Miner!");
                     }
                     1 => {
-                        println!("Running system.");
+                        println!("Running system with {} miners and {} zones.", miners, zones);
                     },
                     2 => {
-                        settings_menu();
+                        let (zones, miners) = settings_menu(zones, miners);
+                        println!("Settings: {} miners and {} zones.", miners, zones);
                     },
                     _ => {
                         print!("Wrong option! Retry: ");
@@ -46,11 +53,11 @@ pub fn display_main_menu() {
     io::stdout().flush();
 }
 
-fn settings_menu() {
+fn settings_menu(mut zones: u32, mut miners: u32) -> (u32, u32) {
     let mut exit_option: bool = false;
 
     while !exit_option {
-        display_settings_menu();
+        display_settings_menu(zones, miners);
         let option: Result<u32, ParseIntError> = utils::read_integer();
         match option {
             Ok(value) => {
@@ -59,10 +66,24 @@ fn settings_menu() {
                         exit_option = true;
                     }
                     1 => {
-                        println!("Modifying miners.");
+                        print!("Insert new miners: ");
+                        io::stdout().flush();
+                        let new_miners: Result<u32, ParseIntError> = utils::read_integer();
+                        if new_miners.is_ok() {
+                            miners = new_miners.unwrap()
+                        } else {
+                            println!("Invalid option!");
+                        }
                     },
                     2 => {
-                        println!("Modifying zones.");
+                        print!("Insert new zones: ");
+                        io::stdout().flush();
+                        let new_zones: Result<u32, ParseIntError> = utils::read_integer();
+                        if new_zones.is_ok() {
+                            zones = new_zones.unwrap()
+                        } else {
+                            println!("Invalid option!");
+                        }
                     },
                     _ => {
                         print!("Wrong option! Retry: ");
@@ -76,13 +97,15 @@ fn settings_menu() {
             }
         }
     }
+
+    return (zones, miners);
 }
 
-fn display_settings_menu() {
+fn display_settings_menu(zones: u32, miners:u32) {
     println!();
     println!("Current settings:");
-    println!("[1] Miners: 0");
-    println!("[2] Zones: 0");
+    println!("[1] Miners: {}", miners);
+    println!("[2] Zones: {}", zones);
     print!("What do you want to change? [0 for quit] ");
     io::stdout().flush();
 }
