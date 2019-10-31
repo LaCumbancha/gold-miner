@@ -26,8 +26,9 @@ pub fn run() {
                         println!("Running system with {} miners and {} zones.", miners, zones);
                     },
                     2 => {
-                        let (zones, miners) = settings_menu(zones, miners);
-                        println!("Settings: {} miners and {} zones.", miners, zones);
+                        let (new_zones, new_miners) = settings_menu(zones, miners);
+                        zones = new_zones;
+                        miners = new_miners
                     },
                     _ => {
                         print!("Wrong option! Retry: ");
