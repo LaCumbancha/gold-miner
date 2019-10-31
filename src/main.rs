@@ -1,3 +1,8 @@
+extern crate clap;
+use clap::{Arg, App, SubCommand};
+
+mod model;
+
 fn main() {
-    println!("Gold Miner!");
+    model::menu::run();
 }

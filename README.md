@@ -28,7 +28,7 @@ Implementar una simulación de una actividad exploratoria de un grupo de trabaja
 #### Requerimientos Funcionales
 Un grupo de mineros es contratado para trabajar en un área que no habı́a sido explorada hasta el
 momento. Disponen de un mapa, un poco borroso y con poca información, conteniendo lo poco que se
-conoce de la región hasta el momento.
+conoce de la región.
 
 Los mineros son organizados por un lı́der que les da indicaciones sobre las tareas que deben realizar.
 Todos respetan su palabra.
