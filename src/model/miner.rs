@@ -47,31 +47,36 @@ impl Miner{
         (self.id.clone(),self.tx.clone())
     }
 
-    fn start_round(&self,mseg:MapSegment){
+    fn start_round(&mut self,mseg:MapSegment){
         let mut rng = rand::thread_rng();
-        self.round.gold_dug=iter::repeat(1).take(10).map(|_| rng.gen_range(0.0, 1.0) ).filter(|x| x > mseg as f64).count();
+        self.round = RoundStats{results_recvd: HashMap::new(), gold_dug:0};
+        self.round.gold_dug=iter::repeat(1)
+            .take(10)
+            .map(|_| rng.gen_range(0.0,1.0) as f64 )
+            .filter(|x| x  > &mseg as &f64).count() as Gold;
     }
-    fn stop_mining(&self){
-        self.adjacents.values().map(|v| v.send(ResultsNotification((self.id,self.round.gold_dug)))) as i32;
+    fn stop_mining(&mut self){
+        self.adjacents.values()
+            .map(|v| v.send(ResultsNotification((self.id,self.round.gold_dug))));
     }
-    fn save_result(&self,(id,gold):RoundResults){
+    fn save_result(&mut self,(id,gold):RoundResults){
         self.round.results_recvd.insert(id,gold);
     }
 
-    fn remove_miner(&self,id:MinerId){
-        self.adjacents.remove(id);
+    fn remove_miner(&mut self,id:MinerId){
+        self.adjacents.remove(&id);
     }
-    fn receive_gold(&self,gold:Gold){
-        self.total_gold += gold;
+    fn receive_gold(&mut self,gold:Gold){
+        self.gold_total += gold;
     }
-    pub fn main(&self){
+    pub fn main(&mut self){
         loop{
             match self.rx.recv().unwrap() {
                 Start(mseg) => self.start_round(mseg),
                 Stop => self.stop_mining(),
-                ResultsNotification(rr) => panic!("Not implemented"),
-                ILeft(id) => remove_miner(id),
-                TransferGold(g) => receive_gold(g),
+                ResultsNotification(rr) =>self.save_result(rr),
+                ILeft(id) => self.remove_miner(id),
+                TransferGold(g) => self.receive_gold(g),
                 _ =>  panic!("Not understood")
             }
         }
