@@ -63,7 +63,7 @@ Los siguientes son los requerimientos no funcionales de la aplicación:
 1. El proyecto deberá ser desarrollado en lenguaje Rust utilizando Threads y las siguientes herra-
 mientas de concurrencia, provistas por el lenguaje y la biblioteca standard **sync**:
 
-    1. Channels (de tipo multiple producer, single consumer ).
+    1. Channels (de tipo multiple producer, single consumer).
     2. Mutex
     3. Barrier (https://doc.rust-lang.org/std/sync/struct.Barrier.html)
     4. Condvar (https://doc.rust-lang.org/std/sync/struct.Condvar.html)
