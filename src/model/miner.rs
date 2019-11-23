@@ -6,6 +6,8 @@ use std::iter;
 extern crate rand;
 
 use rand::Rng;
+
+use crate::model::utils::CheckedSend;
 use crate::model::map::{Gold, SectionProbability};
 use crate::model::communication::MiningMessage;
 use crate::model::communication::RoundResults;
@@ -53,13 +55,16 @@ impl Miner {
     fn stop_mining(&mut self) {
         // TODO: Check errors when sending message.
         println!("Miner {} stopped round!", self.miner_id);
-        self.adjacent_miners.values()
-            .map(|miner| miner.send(ResultsNotification((self.miner_id, self.round.gold_dug))));
+        self.adjacent_miners.iter()
+            .for_each(|(id, channel)|
+                channel.checked_send(
+                    ResultsNotification((self.miner_id, self.round.gold_dug)),
+                    Miner::send_callback(*id)
+                )
+            );
     }
 
-    fn save_result(&mut self, (id, gold): RoundResults) {
-        self.round.results_received.insert(id, gold);
-    }
+    fn save_result(&mut self, (id, gold): RoundResults) { self.round.results_received.insert(id, gold); }
 
     fn remove_miner(&mut self, id: MinerId) {
         self.adjacent_miners.remove(&id);
@@ -67,6 +72,10 @@ impl Miner {
 
     fn receive_gold(&mut self, gold: Gold) {
         self.gold_total += gold;
+    }
+
+    fn send_callback(miner_id: MinerId) -> impl FnOnce(MiningMessage) {
+        move |message: MiningMessage| { println!("Error sending {:?} to miner {}", message, miner_id) }
     }
 
     pub fn work(&mut self) {

@@ -71,7 +71,7 @@ fn settings_menu(mut zones: i32, mut miners: i32) -> (i32, i32) {
                     }
                     1 => {
                         print!("Insert new miners: ");
-                        io::stdout().flush();
+                        io::stdout().flush().expect("Error flushing stdout.");
                         let new_miners: Result<i32, ParseIntError> = utils::read_integer();
                         if new_miners.is_ok() {
                             miners = new_miners.unwrap()
@@ -82,7 +82,7 @@ fn settings_menu(mut zones: i32, mut miners: i32) -> (i32, i32) {
                     },
                     2 => {
                         print!("Insert new zones: ");
-                        io::stdout().flush();
+                        io::stdout().flush().expect("Error flushing stdout.");
                         let new_zones: Result<i32, ParseIntError> = utils::read_integer();
                         if new_zones.is_ok() {
                             zones = new_zones.unwrap()

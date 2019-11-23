@@ -4,9 +4,11 @@ use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
 
 extern crate rand;
+
 use rand::Rng;
 use rand::prelude::ThreadRng;
 
+use crate::model::utils::CheckedSend;
 use crate::model::miner::Miner;
 use crate::model::map::MapSection;
 use crate::model::communication::MiningMessage;
@@ -23,7 +25,6 @@ pub struct Foreman {
 }
 
 impl Foreman {
-
     pub fn new(sections: i32) -> Foreman {
         println!("FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.");
         println!("FOREMAN: Today we'll be exploring this {} zones.", sections);
@@ -41,7 +42,6 @@ impl Foreman {
             miners_channels: HashMap::new(),
             thread_handlers: Vec::new()
         }
-
     }
 
     pub fn hire_miners(&mut self, miners: i32) {
@@ -80,16 +80,24 @@ impl Foreman {
             println!();
             print!("FOREMAN: Yo' filthy rats! Go find me some gold in Section {}! ", section.0);
 
-            // TODO: Check errors when sending messages.
-            self.miners_channels.values()
-                .map(|miner_channel| miner_channel.send(Start(*section)));
+            self.miners_channels.iter()
+                .for_each(|(id, channel)|
+                    channel.checked_send(
+                        Start(*section),
+                        Foreman::send_callback(*id)
+                    )
+                );
 
             print!("(Press [ENTER] to make miners stop digging)");
             self.wait();
 
-            // TODO: Check errors when sending message.
-            self.miners_channels.values()
-                .map(|miner_channel| miner_channel.send(Stop));
+            self.miners_channels.iter()
+                .for_each(|(id, channel)|
+                    channel.checked_send(
+                        Stop,
+                        Foreman::send_callback(*id)
+                    )
+                );
         }
 
         //self.finish();
@@ -101,10 +109,14 @@ impl Foreman {
         io::stdin().read_line(&mut buffer).expect("Failed to read from stdin.");
     }
 
+    fn send_callback(miner_id: MinerId) -> impl FnOnce(MiningMessage) {
+        // TODO: Implement a log for errors.
+        move |message: MiningMessage| { println!("Error sending {:?} to miner {}", message, miner_id) }
+    }
+
     //fn finish(&self) {
     //    for handle in self.thread_handlers {
     //        handle.join().unwrap();
     //    }
     //}
-
 }

@@ -4,6 +4,7 @@ use crate::model::miner::MinerId;
 
 pub type  RoundResults = (MinerId,Gold);
 
+#[derive(Debug, Clone)]
 pub enum MiningMessage {
     Start(MapSection),
     Stop,
