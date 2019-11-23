@@ -1,6 +1,4 @@
 use std::sync::mpsc::Sender;
-use std::sync::mpsc::Receiver;
-use std::sync::mpsc::channel;
 use std::collections::HashMap;
 
 extern crate rand;
@@ -29,7 +27,7 @@ impl Foreman {
         let mut random_generator: ThreadRng = rand::thread_rng();
         let mut region_sections: Vec<MapSection> = Vec::new();
         for section_id in 1..=sections {
-            region_sections.push((section_id, random_generator.gen(0.0, 1.0)))
+            region_sections.push((section_id, random_generator.gen_range(0.0, 1.0)))
         }
 
         Foreman {
@@ -43,10 +41,10 @@ impl Foreman {
     pub fn hire_miners(&mut self, miners: i32) {
         for id in 1..=miners {
             let miner: Miner = Miner::new(id);
-            let miner_contact: (i32, Sender<MiningMessage>) = miner.contact();
+            let (miner_id, sending_channel): (i32, Sender<MiningMessage>) = miner.contact();
             // TODO: Make miners work in different threads.
             self.miners.push(miner);
-            self.miners_channels.insert(miner_contact.0, miner_contact.1)
+            self.miners_channels.insert(miner_id, sending_channel)
         }
     }
 
@@ -69,6 +67,7 @@ impl Foreman {
     fn wait(&self) {
         print!("Press [ENTER] to make miners stop digging.");
         io::stdout().flush();
+        let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).expect("Failed to read from stdin.");
     }
 

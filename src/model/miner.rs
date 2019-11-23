@@ -7,7 +7,6 @@ use std::iter;
 extern crate rand;
 
 use rand::Rng;
-use rand::prelude::*;
 use crate::model::map::{Gold, SectionProbability};
 use crate::model::communication::MiningMessage;
 use crate::model::communication::RoundResults;
