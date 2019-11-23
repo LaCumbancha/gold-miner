@@ -66,7 +66,7 @@ impl Miner {
     fn stop_mining(&mut self) {
         // TODO: Check errors when sending message.
         self.adjacent_miners.values()
-            .map(|miner: Sender<MiningMessage>| miner.send(ResultsNotification((self.miner_id, self.round.gold_dug))));
+            .map(|miner| miner.send(ResultsNotification((self.miner_id, self.round.gold_dug))));
     }
 
     fn save_result(&mut self, (id, gold): RoundResults) {

@@ -32,13 +32,13 @@ pub fn run() {
                     },
                     _ => {
                         print!("Wrong option! Retry: ");
-                        io::stdout().flush();
+                        io::stdout().flush().expect("Error flushing stdout.");
                     }
                 }
             },
             Err(..) => {
                 print!("Wrong option! Retry: ");
-                io::stdout().flush();
+                io::stdout().flush().expect("Error flushing stdout.");
             }
         }
     }
@@ -51,7 +51,7 @@ pub fn display_main_menu() {
     println!("[1] Run system");
     println!("[2] Settings");
     print!("Selection: [0 for quit] ");
-    io::stdout().flush();
+    io::stdout().flush().expect("Error flushing stdout.");
 }
 
 fn settings_menu(mut zones: u32, mut miners: u32) -> (u32, u32) {
@@ -88,13 +88,13 @@ fn settings_menu(mut zones: u32, mut miners: u32) -> (u32, u32) {
                     },
                     _ => {
                         print!("Wrong option! Retry: ");
-                        io::stdout().flush();
+                        io::stdout().flush().expect("Error flushing stdout.");
                     }
                 }
             },
             Err(..) => {
                 print!("Wrong option! Retry: ");
-                io::stdout().flush();
+                io::stdout().flush().expect("Error flushing stdout.");
             }
         }
     }
@@ -108,5 +108,5 @@ fn display_settings_menu(zones: u32, miners:u32) {
     println!("[1] Miners: {}", miners);
     println!("[2] Zones: {}", zones);
     print!("What do you want to change? [0 for quit] ");
-    io::stdout().flush();
+    io::stdout().flush().expect("Error flushing stdout.");
 }
