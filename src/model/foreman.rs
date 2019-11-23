@@ -23,6 +23,9 @@ pub struct Foreman {
 impl Foreman {
 
     pub fn new(sections: i32) -> Foreman {
+        println!("FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.");
+        println!("FOREMAN: Today we'll be exploring this {} zones.", sections);
+
         // Generating sections randomly.
         let mut random_generator: ThreadRng = rand::thread_rng();
         let mut region_sections: Vec<MapSection> = Vec::new();
@@ -39,6 +42,7 @@ impl Foreman {
     }
 
     pub fn hire_miners(&mut self, miners: i32) {
+        println!("FOREMAN: But first, we need some cheap manpower. We'll go to the town and get the first {} morons that show up.", miners);
         for id in 1..=miners {
             let miner: Miner = Miner::new(id);
             let (miner_id, sending_channel): (i32, Sender<MiningMessage>) = miner.contact();
@@ -49,13 +53,17 @@ impl Foreman {
     }
 
     pub fn start_mining(&self) {
+        print!("FOREMAN: Ok, it's showtime. Let's get this shit done. (Press [ENTER] to make miners start digging)");
+        self.wait();
         for section in &self.sections {
-            println!("Yo' filthy rats! Go find me some gold in Section {}", section.1);
+            println!();
+            print!("FOREMAN: Yo' filthy rats! Go find me some gold in Section {}! ", section.0);
 
             // TODO: Check errors when sending messages.
             self.miners_channels.values()
                 .map(|miner_channel| miner_channel.send(Start(*section)));
 
+            print!("(Press [ENTER] to make miners stop digging)");
             self.wait();
 
             // TODO: Check errors when sending message.
@@ -65,7 +73,6 @@ impl Foreman {
     }
 
     fn wait(&self) {
-        print!("Press [ENTER] to make miners stop digging.");
         io::stdout().flush().expect("Error flushing stdout.");
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).expect("Failed to read from stdin.");
