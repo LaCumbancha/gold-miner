@@ -1,6 +1,6 @@
 use std::io;
 use std::io::Write;
-use std::sync::mpsc::Sender;
+use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
 
 extern crate rand;
@@ -43,12 +43,26 @@ impl Foreman {
 
     pub fn hire_miners(&mut self, miners: i32) {
         println!("FOREMAN: But first, we need some cheap manpower. We'll go to the town and get the first {} morons that show up.", miners);
+
+        // Creating channels for every miner.
+        let mut channels_in: HashMap<MinerId, Sender<MiningMessage>> = HashMap::new();
+        let mut channels_out: HashMap<MinerId, Receiver<MiningMessage>> = HashMap::new();
         for id in 1..=miners {
-            let miner: Miner = Miner::new(id);
-            let (miner_id, sending_channel): (i32, Sender<MiningMessage>) = miner.contact();
+            let (channel_in, channel_out): (Sender<MiningMessage>, Receiver<MiningMessage>) = channel();
+            self.miners_channels.insert(id, channel_in.clone());
+            channels_in.insert(id, channel_in);
+            channels_out.insert(id, channel_out);
+        }
+
+        for id in 1..=miners {
+            // Preparing channels for each miner.
+            let miner_receiving_channel = channels_out.remove(&id).unwrap();
+            let mut miner_adjacent_channels = channels_in.clone();
+            miner_adjacent_channels.remove(&id);
+
             // TODO: Make miners work in different threads.
+            let miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels);
             self.miners.push(miner);
-            self.miners_channels.insert(miner_id, sending_channel);
         }
     }
 

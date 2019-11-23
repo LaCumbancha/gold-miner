@@ -5,5 +5,4 @@ mod model;
 
 fn main() {
     menu::run();
-    model::miner::Miner::new(0);
 }

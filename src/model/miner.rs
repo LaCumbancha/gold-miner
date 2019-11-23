@@ -1,6 +1,5 @@
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
-use std::sync::mpsc::channel;
 use std::collections::HashMap;
 use std::iter;
 
@@ -22,36 +21,23 @@ struct RoundStats {
 pub struct Miner {
     miner_id: MinerId,
     gold_total: Gold,
-    sending_channel: Sender<MiningMessage>,
     receiving_channel: Receiver<MiningMessage>,
     adjacent_miners: HashMap<MinerId, Sender<MiningMessage>>,
     round: RoundStats,
 }
 
 impl Miner {
-    pub fn new(id: MinerId) -> Miner {
-        let (channel_in, channel_out): (Sender<MiningMessage>, Receiver<MiningMessage>) = channel();
-
+    pub fn new(id: MinerId, channel_out: Receiver<MiningMessage>, miners: HashMap<MinerId, Sender<MiningMessage>>) -> Miner {
         Miner {
             miner_id: id,
             gold_total: 0,
-            sending_channel: channel_in,
             receiving_channel: channel_out,
-            adjacent_miners: HashMap::new(),
+            adjacent_miners: miners,
             round: RoundStats {
                 results_received: HashMap::new(),
                 gold_dug: 0,
             },
         }
-    }
-
-    pub fn meet(&mut self, miner: Miner) {
-        let (miner_id, sending_channel) = miner.contact();
-        self.adjacent_miners.insert(miner_id, sending_channel);
-    }
-
-    pub fn contact(&self) -> (MinerId, Sender<MiningMessage>) {
-        (self.miner_id.clone(), self.sending_channel.clone())
     }
 
     fn start_round(&mut self, message: SectionProbability) {
