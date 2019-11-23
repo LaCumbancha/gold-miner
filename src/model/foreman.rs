@@ -52,19 +52,23 @@ impl Foreman {
         for section in &self.sections {
             println!("Yo' filthy rats! Go find me some gold in Section {}", section.1);
 
-            // TODO: Check errors when sending messages.
-            //self.miners_channels.values()
-                //.for_each(|miner_channel| miner_channel.send(Start(*section)).check_sending());
             self.miners_channels.iter()
-                .for_each(|(id, channel)| channel.checked_send(Start(*section), Foreman::send_callback(*id)));
+                .for_each(|(id, channel)|
+                    channel.checked_send(
+                        Start(*section),
+                        Foreman::send_callback(*id),
+                    )
+                );
 
             self.wait();
 
-            // TODO: Check errors when sending message.
-            //self.miners_channels.values()
-                //.map(|miner_channel| miner_channel.send(Stop).check_sending());
             self.miners_channels.iter()
-                .for_each(|(id, channel)| channel.checked_send(Stop, Foreman::send_callback(*id)));
+                .for_each(|(id, channel)|
+                    channel.checked_send(
+                        Stop,
+                        Foreman::send_callback(*id),
+                    )
+                );
         }
     }
 
@@ -76,7 +80,7 @@ impl Foreman {
     }
 
     fn send_callback(miner_id: MinerId) -> impl FnOnce(MiningMessage) {
+        // TODO: Implement a log for errors.
         move |message: MiningMessage| { println!("Error sending {:?} to miner {}", message, miner_id) }
     }
-
 }
