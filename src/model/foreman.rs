@@ -53,14 +53,18 @@ impl Foreman {
             println!("Yo' filthy rats! Go find me some gold in Section {}", section.1);
 
             // TODO: Check errors when sending messages.
-            self.miners_channels.values()
-                .for_each(|miner_channel| miner_channel.send(Start(*section)).check_sending());
+            //self.miners_channels.values()
+                //.for_each(|miner_channel| miner_channel.send(Start(*section)).check_sending());
+            self.miners_channels.iter()
+                .for_each(|(id, channel)| channel.checked_send(Start(*section), Foreman::send_callback(*id)));
 
             self.wait();
 
             // TODO: Check errors when sending message.
-            self.miners_channels.values()
-                .map(|miner_channel| miner_channel.send(Stop).check_sending());
+            //self.miners_channels.values()
+                //.map(|miner_channel| miner_channel.send(Stop).check_sending());
+            self.miners_channels.iter()
+                .for_each(|(id, channel)| channel.checked_send(Stop, Foreman::send_callback(*id)));
         }
     }
 
@@ -71,10 +75,8 @@ impl Foreman {
         io::stdin().read_line(&mut buffer).expect("Failed to read from stdin.");
     }
 
-    fn send_callback(miner_id: MinerId, message: MiningMessage) -> &dyn Fn() -> () {
-        return {
-            println!("Error sending {} to miner {}", message, miner_id);
-        }
+    fn send_callback(miner_id: MinerId) -> impl FnOnce(MiningMessage) {
+        move |message: MiningMessage| { println!("Error sending {:?} to miner {}", message, miner_id) }
     }
 
 }

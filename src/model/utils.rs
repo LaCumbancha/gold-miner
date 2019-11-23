@@ -1,11 +1,12 @@
 use std::sync::mpsc::Sender;
 
-pub trait CheckedSend {
-    fn checked_send<T>(self, message: T, callback: &dyn Fn() -> ()) -> ();
+pub trait CheckedSend<T: Clone> {
+    fn checked_send(&self, message: T, callback: impl FnOnce(T)) -> ();
 }
 
-impl CheckedSend for Sender<T> {
-    fn checked_send(self, message: T, callback: &dyn Fn() -> ()) -> () {
-        if self.send(message).is_err() { callback() }
+impl<T: Clone> CheckedSend<T> for Sender<T> {
+    fn checked_send(&self, message: T, callback: impl FnOnce(T)) -> () {
+        let error_message = message.clone();
+        if self.send(message).is_err() { callback(error_message) }
     }
 }
