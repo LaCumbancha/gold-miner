@@ -8,8 +8,7 @@ extern crate rand;
 
 use rand::Rng;
 use rand::prelude::*;
-use crate::model::map::Gold;
-use crate::model::map::MapSegment;
+use crate::model::map::{Gold, SectionProbability};
 use crate::model::communication::MiningMessage;
 use crate::model::communication::RoundResults;
 use crate::model::communication::MiningMessage::*;
@@ -56,7 +55,7 @@ impl Miner {
         (self.miner_id.clone(), self.sending_channel.clone())
     }
 
-    fn start_round(&mut self, message: MapSegment) {
+    fn start_round(&mut self, message: SectionProbability) {
         let mut rng = rand::thread_rng();
         self.round = RoundStats { results_received: HashMap::new(), gold_dug: 0 };
         self.round.gold_dug = iter::repeat(1)
@@ -66,8 +65,9 @@ impl Miner {
     }
 
     fn stop_mining(&mut self) {
+        // TODO: Check errors when sending message.
         self.adjacent_miners.values()
-            .map(|miner| miner.send(ResultsNotification((self.miner_id, self.round.gold_dug))));
+            .map(|miner: Sender<MiningMessage>| miner.send(ResultsNotification((self.miner_id, self.round.gold_dug))));
     }
 
     fn save_result(&mut self, (id, gold): RoundResults) {
@@ -82,15 +82,14 @@ impl Miner {
         self.gold_total += gold;
     }
 
-    pub fn main(&mut self) {
+    pub fn work(&mut self) {
         loop {
             match self.receiving_channel.recv().unwrap() {
-                Start(mseg) => self.start_round(mseg),
+                Start(section) => self.start_round(section.1),
                 Stop => self.stop_mining(),
                 ResultsNotification(rr) => self.save_result(rr),
                 ILeft(id) => self.remove_miner(id),
-                TransferGold(g) => self.receive_gold(g),
-                _ => panic!("Not understood")
+                TransferGold(g) => self.receive_gold(g)
             }
         }
     }
