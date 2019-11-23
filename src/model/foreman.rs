@@ -19,7 +19,7 @@ pub type MinerId = i32;
 pub struct Foreman {
     miners: Vec<Miner>,
     sections: Vec<MapSection>,
-    miners_channels: HashMap<MinerId, Sender<MiningMessage>>,
+    miners_channels: HashMap<MinerId, Sender<MiningMessage>>
 }
 
 impl Foreman {
@@ -34,7 +34,7 @@ impl Foreman {
         Foreman {
             miners: Vec::new(),
             sections: region_sections,
-            miners_channels: HashMap::new(),
+            miners_channels: HashMap::new()
         }
     }
 
@@ -56,7 +56,7 @@ impl Foreman {
                 .for_each(|(id, channel)|
                     channel.checked_send(
                         Start(*section),
-                        Foreman::send_callback(*id),
+                        Foreman::send_callback(*id)
                     )
                 );
 
@@ -66,7 +66,7 @@ impl Foreman {
                 .for_each(|(id, channel)|
                     channel.checked_send(
                         Stop,
-                        Foreman::send_callback(*id),
+                        Foreman::send_callback(*id)
                     )
                 );
         }

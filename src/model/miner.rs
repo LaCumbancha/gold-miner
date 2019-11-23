@@ -71,8 +71,9 @@ impl Miner {
             .for_each(|(id, channel)|
                 channel.checked_send(
                     ResultsNotification((self.miner_id, self.round.gold_dug)),
-                    Miner::send_callback(*id),
-                ));
+                    Miner::send_callback(*id)
+                )
+            );
     }
 
     fn save_result(&mut self, (id, gold): RoundResults) { self.round.results_received.insert(id, gold); }
