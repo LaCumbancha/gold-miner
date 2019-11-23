@@ -26,10 +26,11 @@ pub struct Miner {
     receiving_channel: Receiver<MiningMessage>,
     adjacent_miners: HashMap<MinerId, Sender<MiningMessage>>,
     round: RoundStats,
+    logger_channel: Sender<String>,
 }
 
 impl Miner {
-    pub fn new(id: MinerId, channel_out: Receiver<MiningMessage>, miners: HashMap<MinerId, Sender<MiningMessage>>) -> Miner {
+    pub fn new(id: MinerId, channel_out: Receiver<MiningMessage>, miners: HashMap<MinerId, Sender<MiningMessage>>, logger: Sender<String>) -> Miner {
         Miner {
             miner_id: id,
             gold_total: 0,
@@ -39,6 +40,7 @@ impl Miner {
                 results_received: HashMap::new(),
                 gold_dug: 0,
             },
+            logger_channel: logger
         }
     }
 
@@ -59,7 +61,7 @@ impl Miner {
             .for_each(|(id, channel)|
                 channel.checked_send(
                     ResultsNotification((self.miner_id, self.round.gold_dug)),
-                    Miner::send_callback(*id)
+                    Miner::send_callback(*id),
                 )
             );
     }

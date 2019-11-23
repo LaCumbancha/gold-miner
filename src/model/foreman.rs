@@ -8,6 +8,7 @@ extern crate rand;
 use rand::Rng;
 use rand::prelude::ThreadRng;
 
+use crate::model::utils::Logging;
 use crate::model::utils::CheckedSend;
 use crate::model::miner::Miner;
 use crate::model::map::MapSection;
@@ -21,11 +22,12 @@ pub struct Foreman {
     miners: Vec<Miner>,
     sections: Vec<MapSection>,
     miners_channels: HashMap<MinerId, Sender<MiningMessage>>,
+    logger_channel: Sender<String>,
     thread_handlers: Vec<JoinHandle<()>>
 }
 
 impl Foreman {
-    pub fn new(sections: i32) -> Foreman {
+    pub fn new(sections: i32, logger: Sender<String>) -> Foreman {
         println!("FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.");
         println!("FOREMAN: Today we'll be exploring this {} zones.", sections);
 
@@ -40,6 +42,7 @@ impl Foreman {
             miners: Vec::new(),
             sections: region_sections,
             miners_channels: HashMap::new(),
+            logger_channel: logger,
             thread_handlers: Vec::new()
         }
     }
@@ -62,14 +65,15 @@ impl Foreman {
             let miner_receiving_channel = channels_out.remove(&id).unwrap();
             let mut miner_adjacent_channels = channels_in.clone();
             miner_adjacent_channels.remove(&id);
+            let mut miner_logger = self.logger_channel.clone();
 
-            let handle: JoinHandle<()> = thread::spawn(move || {
-                println!("Creating miner {}", id);  // TODO: Replace with log.
-                let mut miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels);
+            self.logger_channel.log(format!("Creating miner {}", id));
+            let handler: JoinHandle<()> = thread::spawn(move || {
+                let mut miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels, miner_logger);
                 miner.work();
             });
 
-            self.thread_handlers.push(handle);
+            self.thread_handlers.push(handler);
         }
     }
 
@@ -100,7 +104,7 @@ impl Foreman {
                 );
         }
 
-        //self.finish();
+        self.finish();
     }
 
     fn wait(&self) {
@@ -110,13 +114,13 @@ impl Foreman {
     }
 
     fn send_callback(miner_id: MinerId) -> impl FnOnce(MiningMessage) {
-        // TODO: Implement a log for errors.
+        // TODO: Implement errors log.
         move |message: MiningMessage| { println!("Error sending {:?} to miner {}", message, miner_id) }
     }
 
-    //fn finish(&self) {
-    //    for handle in self.thread_handlers {
-    //        handle.join().unwrap();
-    //    }
-    //}
+    fn finish(&self) {
+        for handle in self.thread_handlers {
+            handle.join().unwrap();
+        }
+    }
 }
