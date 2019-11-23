@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, thread};
 use std::io::Write;
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
@@ -11,13 +11,15 @@ use crate::model::miner::Miner;
 use crate::model::map::MapSection;
 use crate::model::communication::MiningMessage;
 use crate::model::communication::MiningMessage::*;
+use std::thread::JoinHandle;
 
 pub type MinerId = i32;
 
 pub struct Foreman {
     miners: Vec<Miner>,
     sections: Vec<MapSection>,
-    miners_channels: HashMap<MinerId, Sender<MiningMessage>>
+    miners_channels: HashMap<MinerId, Sender<MiningMessage>>,
+    thread_handlers: Vec<JoinHandle<()>>
 }
 
 impl Foreman {
@@ -36,7 +38,8 @@ impl Foreman {
         Foreman {
             miners: Vec::new(),
             sections: region_sections,
-            miners_channels: HashMap::new()
+            miners_channels: HashMap::new(),
+            thread_handlers: Vec::new()
         }
 
     }
@@ -60,9 +63,13 @@ impl Foreman {
             let mut miner_adjacent_channels = channels_in.clone();
             miner_adjacent_channels.remove(&id);
 
-            // TODO: Make miners work in different threads.
-            let miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels);
-            self.miners.push(miner);
+            let handle: JoinHandle<()> = thread::spawn(move || {
+                println!("Creating miner {}", id);  // TODO: Replace with log.
+                let mut miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels);
+                miner.work();
+            });
+
+            self.thread_handlers.push(handle);
         }
     }
 
@@ -84,6 +91,8 @@ impl Foreman {
             self.miners_channels.values()
                 .map(|miner_channel| miner_channel.send(Stop));
         }
+
+        //self.finish();
     }
 
     fn wait(&self) {
@@ -91,5 +100,11 @@ impl Foreman {
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).expect("Failed to read from stdin.");
     }
+
+    //fn finish(&self) {
+    //    for handle in self.thread_handlers {
+    //        handle.join().unwrap();
+    //    }
+    //}
 
 }
