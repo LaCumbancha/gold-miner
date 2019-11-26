@@ -7,7 +7,7 @@ extern crate rand;
 
 use rand::Rng;
 
-use crate::model::utils::CheckedSend;
+use crate::utils::utils::CheckedSend;
 use crate::model::map::{Gold, SectionProbability};
 use crate::model::communication::MiningMessage;
 use crate::model::communication::RoundResults;

@@ -3,7 +3,7 @@ use std::fs::{File, OpenOptions};
 use std::sync::mpsc::Receiver;
 use std::io::Write;
 
-use crate::model::utils::TimeLogged;
+use crate::utils::utils::TimeLogged;
 use chrono::{Utc, Datelike};
 
 static LOGS_FOLDER: &str = "./logs";

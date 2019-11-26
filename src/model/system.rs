@@ -1,8 +1,9 @@
-use crate::model::foreman::Foreman;
 use std::sync::mpsc::{Receiver, Sender, channel};
 use std::thread::JoinHandle;
 use std::thread;
-use crate::model::logger::Logger;
+
+use crate::model::foreman::Foreman;
+use crate::utils::logger::Logger;
 
 pub struct System {}
 

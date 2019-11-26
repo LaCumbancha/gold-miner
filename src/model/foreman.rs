@@ -8,8 +8,8 @@ extern crate rand;
 use rand::Rng;
 use rand::prelude::ThreadRng;
 
-use crate::model::utils::Logging;
-use crate::model::utils::CheckedSend;
+use crate::utils::utils::Logging;
+use crate::utils::utils::CheckedSend;
 use crate::model::miner::Miner;
 use crate::model::map::MapSection;
 use crate::model::communication::MiningMessage;
