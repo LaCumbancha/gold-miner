@@ -1,25 +1,27 @@
+use chrono::{Utc, Datelike};
 use std::{fs, io};
 use std::fs::{File, OpenOptions};
+use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::io::Write;
 
+use crate::utils::utils::Logging;
 use crate::utils::utils::TimeLogged;
-use chrono::{Utc, Datelike};
 
 static LOGS_FOLDER: &str = "./logs";
 
-pub struct Logger {
+pub struct LoggerWriter {
     file: File,
     receiver: Receiver<String>
 }
 
-impl Logger {
+impl LoggerWriter {
 
-    pub fn new(receiver: Receiver<String>) -> io::Result<Logger> {
+    pub fn new(receiver: Receiver<String>) -> io::Result<LoggerWriter> {
         fs::create_dir_all(LOGS_FOLDER)?;
-        let file = OpenOptions::new().read(true).write(true).create(true).open(Logger::log_name())?;
+        let file = OpenOptions::new().read(true).write(true).create(true).open(LoggerWriter::log_name())?;
 
-        Ok(Logger { file, receiver })
+        Ok(LoggerWriter { file, receiver })
     }
 
     fn log_name() -> String {
@@ -34,8 +36,33 @@ impl Logger {
 
     pub fn run(&mut self) {
         for received in self.receiver {
-            self.file.write(received.time_logged().as_bytes());
+            self.file.write(received.as_bytes());
         }
+    }
+
+}
+
+#[derive(Clone)]
+pub struct Logger {
+    sender: Sender<String>
+}
+
+impl Logger {
+
+    pub fn new(sender: Sender<String>) -> Logger {
+        Logger { sender }
+    }
+
+    pub fn debug(&self, message: String) {
+        self.sender.log(format!("[DEBUG] {}", message.time_logged()));
+    }
+
+    pub fn info(&self, message: String) {
+        self.sender.log(format!("[INFO] {}", message.time_logged()));
+    }
+
+    pub fn error(&self, message: String) {
+        self.sender.log(format!("[ERROR] {}", message.time_logged()));
     }
 
 }

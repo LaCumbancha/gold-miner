@@ -12,6 +12,7 @@ use crate::model::map::{Gold, SectionProbability};
 use crate::model::communication::MiningMessage;
 use crate::model::communication::RoundResults;
 use crate::model::communication::MiningMessage::*;
+use crate::utils::logger::Logger;
 
 pub type MinerId = i32;
 
@@ -26,11 +27,11 @@ pub struct Miner {
     receiving_channel: Receiver<MiningMessage>,
     adjacent_miners: HashMap<MinerId, Sender<MiningMessage>>,
     round: RoundStats,
-    logger_channel: Sender<String>,
+    logger: Logger,
 }
 
 impl Miner {
-    pub fn new(id: MinerId, channel_out: Receiver<MiningMessage>, miners: HashMap<MinerId, Sender<MiningMessage>>, logger: Sender<String>) -> Miner {
+    pub fn new(id: MinerId, channel_out: Receiver<MiningMessage>, miners: HashMap<MinerId, Sender<MiningMessage>>, logger: Logger) -> Miner {
         Miner {
             miner_id: id,
             gold_total: 0,
@@ -40,7 +41,7 @@ impl Miner {
                 results_received: HashMap::new(),
                 gold_dug: 0,
             },
-            logger_channel: logger
+            logger
         }
     }
 

@@ -22,7 +22,6 @@ pub trait TimeLogged {
 impl TimeLogged for String {
     fn time_logged(&self) -> String {
         use chrono::Utc;
-
         let now: DateTime<Utc> = Utc::now();
         return now.to_rfc3339() + self;
     }

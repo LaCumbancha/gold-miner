@@ -2,19 +2,19 @@ use std::{io, thread};
 use std::io::Write;
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
+use std::thread::JoinHandle;
 
 extern crate rand;
 
 use rand::Rng;
 use rand::prelude::ThreadRng;
 
-use crate::utils::utils::Logging;
 use crate::utils::utils::CheckedSend;
 use crate::model::miner::Miner;
 use crate::model::map::MapSection;
 use crate::model::communication::MiningMessage;
 use crate::model::communication::MiningMessage::*;
-use std::thread::JoinHandle;
+use crate::utils::logger::Logger;
 
 pub type MinerId = i32;
 
@@ -22,12 +22,12 @@ pub struct Foreman {
     miners: Vec<Miner>,
     sections: Vec<MapSection>,
     miners_channels: HashMap<MinerId, Sender<MiningMessage>>,
-    logger_channel: Sender<String>,
-    thread_handlers: Vec<JoinHandle<()>>
+    thread_handlers: Vec<JoinHandle<()>>,
+    logger: Logger,
 }
 
 impl Foreman {
-    pub fn new(sections: i32, logger: Sender<String>) -> Foreman {
+    pub fn new(sections: i32, logger: Logger) -> Foreman {
         println!("FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.");
         println!("FOREMAN: Today we'll be exploring this {} zones.", sections);
 
@@ -42,8 +42,8 @@ impl Foreman {
             miners: Vec::new(),
             sections: region_sections,
             miners_channels: HashMap::new(),
-            logger_channel: logger,
-            thread_handlers: Vec::new()
+            thread_handlers: Vec::new(),
+            logger,
         }
     }
 
@@ -65,9 +65,9 @@ impl Foreman {
             let miner_receiving_channel = channels_out.remove(&id).unwrap();
             let mut miner_adjacent_channels = channels_in.clone();
             miner_adjacent_channels.remove(&id);
-            let mut miner_logger = self.logger_channel.clone();
+            let miner_logger = self.logger.clone();
 
-            self.logger_channel.log(format!("Creating miner {}", id));
+            self.logger.info(format!("Creating miner {}", id.clone()));
             let handler: JoinHandle<()> = thread::spawn(move || {
                 let mut miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels, miner_logger);
                 miner.work();
@@ -77,7 +77,7 @@ impl Foreman {
         }
     }
 
-    pub fn start_mining(&self) {
+    pub fn start_mining(&mut self) {
         print!("FOREMAN: Ok, it's showtime. Let's get this shit done. (Press [ENTER] to make miners start digging)");
         self.wait();
         for section in &self.sections {
@@ -88,7 +88,7 @@ impl Foreman {
                 .for_each(|(id, channel)|
                     channel.checked_send(
                         Start(*section),
-                        Foreman::send_callback(*id)
+                        Foreman::send_callback(id.clone(), self.logger.clone()),
                     )
                 );
 
@@ -99,7 +99,7 @@ impl Foreman {
                 .for_each(|(id, channel)|
                     channel.checked_send(
                         Stop,
-                        Foreman::send_callback(*id)
+                        Foreman::send_callback(id.clone(), self.logger.clone()),
                     )
                 );
         }
@@ -113,14 +113,14 @@ impl Foreman {
         io::stdin().read_line(&mut buffer).expect("Failed to read from stdin.");
     }
 
-    fn send_callback(miner_id: MinerId) -> impl FnOnce(MiningMessage) {
+    fn send_callback(miner_id: MinerId, logger: Logger) -> impl FnOnce(MiningMessage) {
         // TODO: Implement errors log.
-        move |message: MiningMessage| { println!("Error sending {:?} to miner {}", message, miner_id) }
+        move |message: MiningMessage| { logger.error(format!("Error sending {:?} to miner {}", message, miner_id)) }
     }
 
-    fn finish(&self) {
-        for handle in self.thread_handlers {
-            handle.join().unwrap();
+    fn finish(&mut self) {
+        for handler in self.thread_handlers {
+            handler.join().unwrap();
         }
     }
 }
