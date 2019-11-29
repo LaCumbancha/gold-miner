@@ -3,7 +3,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
-use std::io::Write;
+use std::io::{Write, LineWriter};
 
 use crate::utils::utils::Logging;
 use crate::utils::utils::TimeLogged;
@@ -22,15 +22,18 @@ impl LoggerWriter {
             .create(true)
             .open(LoggerWriter::log_name())
             .expect("Couldn't create log file!");
+        let mut line_writer = LineWriter::new(file);
 
         for received in receiver {
-            file.write(received.as_bytes());
+            line_writer.write_all(received.as_bytes());
         }
     }
 
     fn log_name() -> String {
         let now = Utc::now();
         let mut buffer: String = String::new();
+        buffer.push_str(LOGS_FOLDER);
+        buffer.push_str("/");
         buffer.push_str(now.year().to_string().as_str());
         buffer.push_str(now.month().to_string().as_str());
         buffer.push_str(now.day().to_string().as_str());
@@ -52,15 +55,15 @@ impl Logger {
     }
 
     pub fn debug(&self, message: String) {
-        self.sender.log(format!("[DEBUG] {}", message.time_logged()));
+        self.sender.log(format!("[DEBUG] {}\n", message.time_logged()));
     }
 
     pub fn info(&self, message: String) {
-        self.sender.log(format!("[INFO] {}", message.time_logged()));
+        self.sender.log(format!("[INFO] {}\n", message.time_logged()));
     }
 
     pub fn error(&self, message: String) {
-        self.sender.log(format!("[ERROR] {}", message.time_logged()));
+        self.sender.log(format!("[ERROR] {}\n", message.time_logged()));
     }
 
 }

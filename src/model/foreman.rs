@@ -2,7 +2,7 @@ use std::{thread, io};
 use std::io::Write;
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
-use std::thread::JoinHandle;
+use std::thread::{JoinHandle, sleep};
 
 extern crate rand;
 
@@ -15,6 +15,7 @@ use crate::model::map::MapSection;
 use crate::model::communication::MiningMessage;
 use crate::model::communication::MiningMessage::*;
 use crate::utils::logger::Logger;
+use std::time::Duration;
 
 pub type MinerId = i32;
 
@@ -119,8 +120,10 @@ impl Foreman {
     }
 
     fn finish(&mut self) {
-        for handler in self.thread_handlers.iter_mut() {
-            handler.join().unwrap();
-        }
+        // TODO: Join handlers
+        sleep(Duration::from_secs(1));
+        // for handler in self.thread_handlers.iter_mut() {
+        //     handler.join().unwrap();
+        // }
     }
 }
