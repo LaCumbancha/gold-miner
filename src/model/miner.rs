@@ -1,18 +1,21 @@
+use std::borrow::Borrow;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, AtomicUsize};
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::collections::HashMap;
-use std::iter;
+use std::{iter, thread};
+use std::thread::JoinHandle;
+use rand::Rng;
 
 extern crate rand;
 
-use rand::Rng;
-
-use crate::utils::utils::CheckedSend;
-use crate::model::map::{Gold, SectionProbability};
 use crate::model::communication::MiningMessage;
 use crate::model::communication::RoundResults;
 use crate::model::communication::MiningMessage::*;
+use crate::model::map::Gold;
 use crate::utils::logger::Logger;
+use crate::utils::utils::CheckedSend;
 
 pub type MinerId = i32;
 
@@ -41,18 +44,24 @@ impl Miner {
                 results_received: HashMap::new(),
                 gold_dug: 0,
             },
-            logger
+            logger,
         }
     }
 
-    fn start_round(&mut self, message: SectionProbability) {
-        println!("Miner {} started round!", self.miner_id);
-        let mut random_generator = rand::thread_rng();
-        self.round = RoundStats { results_received: HashMap::new(), gold_dug: 0 };
-        self.round.gold_dug = iter::repeat(1)
-            .take(10)
-            .map(|_| random_generator.gen_range(0.0, 1.0) as f64)
-            .filter(|x| x > &message as &f64).count() as Gold;
+    fn start_mining(&mut self, mut working_flag: Arc<AtomicBool>, mut mining_flag: Arc<AtomicBool>, mut atomic_probability: Arc<AtomicUsize>) {
+        while *working_flag.get_mut() {
+            self.logger.info(format!("Miner {} started round!", self.miner_id));
+            if *mining_flag.get_mut() {
+                let probability = *atomic_probability.get_mut()/100;
+                self.logger.debug(format!("Miner {} probability: {}", self.miner_id, probability));
+                let mut random_generator = rand::thread_rng();
+                self.round = RoundStats { results_received: HashMap::new(), gold_dug: 0 };
+                self.round.gold_dug = iter::repeat(1)
+                    .take(10)
+                    .map(|_| random_generator.gen_range(0.0, 1.0) as f64)
+                    .filter(|x| x > &probability).count() as Gold;
+            }
+        }
     }
 
     fn stop_mining(&mut self) {
@@ -82,14 +91,36 @@ impl Miner {
     }
 
     pub fn work(&mut self) {
+        let mut working_flag = Arc::new(AtomicBool::new(true));
+        let mut working_flag2 = working_flag.clone();
+
+        let mut mining_flag = Arc::new(AtomicBool::new(false));
+        let mut mining_flag2 = mining_flag.clone();
+
+        let mut probability = Arc::new(AtomicUsize::new(0));
+        let mut probability2 = probability.clone();
+
+        let handler: JoinHandle<()> = thread::spawn(move || {
+            self.start_mining(working_flag2, mining_flag2, probability2);
+        });
+
         loop {
             match self.receiving_channel.recv().unwrap() {
-                Start(section) => self.start_round(section.1),
-                Stop => self.stop_mining(),
+                Start(section) => {
+                    self.logger.info(format!("Miner {} started round.", self.miner_id));
+                    working_flag = Arc::from(true);
+                }
+                Stop => {
+                    self.logger.info(format!("Miner {} started round.", self.miner_id));
+                    mining_flag = Arc::from(false);
+                    self.stop_mining();
+                }
                 ResultsNotification(rr) => self.save_result(rr),
                 ILeft(id) => self.remove_miner(id),
-                TransferGold(g) => self.receive_gold(g)
+                TransferGold(gold) => self.receive_gold(gold)
             }
         }
+
+        handler.join().wrap();
     }
 }
