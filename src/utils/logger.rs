@@ -1,6 +1,6 @@
 use chrono::{Utc, Datelike};
-use std::{fs, io};
-use std::fs::{File, OpenOptions};
+use std::fs;
+use std::fs::OpenOptions;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::io::Write;
@@ -10,18 +10,22 @@ use crate::utils::utils::TimeLogged;
 
 static LOGS_FOLDER: &str = "./logs";
 
-pub struct LoggerWriter {
-    file: File,
-    receiver: Receiver<String>
-}
+pub struct LoggerWriter {}
 
 impl LoggerWriter {
 
-    pub fn new(receiver: Receiver<String>) -> io::Result<LoggerWriter> {
-        fs::create_dir_all(LOGS_FOLDER)?;
-        let file = OpenOptions::new().read(true).write(true).create(true).open(LoggerWriter::log_name())?;
+    pub fn run(receiver: Receiver<String>) {
+        fs::create_dir_all(LOGS_FOLDER).expect("Couldn't create log folder!");
+        let mut file = OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(LoggerWriter::log_name())
+            .expect("Couldn't create log file!");
 
-        Ok(LoggerWriter { file, receiver })
+        for received in receiver {
+            file.write(received.as_bytes());
+        }
     }
 
     fn log_name() -> String {
@@ -32,12 +36,6 @@ impl LoggerWriter {
         buffer.push_str(now.day().to_string().as_str());
         buffer.push_str(".log");
         return buffer
-    }
-
-    pub fn run(&mut self) {
-        for received in self.receiver {
-            self.file.write(received.as_bytes());
-        }
     }
 
 }

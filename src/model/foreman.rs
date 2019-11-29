@@ -1,4 +1,4 @@
-use std::{io, thread};
+use std::{thread, io};
 use std::io::Write;
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
@@ -119,7 +119,7 @@ impl Foreman {
     }
 
     fn finish(&mut self) {
-        for handler in self.thread_handlers {
+        for handler in self.thread_handlers.iter_mut() {
             handler.join().unwrap();
         }
     }

@@ -15,10 +15,7 @@ impl System {
         let (logger_in, logger_out): (Sender<String>, Receiver<String>) = channel();
 
         let logger_handler: JoinHandle<()> = thread::spawn(move || {
-            match LoggerWriter::new(logger_out) {
-                Ok(mut logger) => logger.run(),
-                Err(_) => eprintln!("Error generating logs!")
-            }
+            LoggerWriter::run(logger_out);
         });
 
         let mut foreman: Foreman = Foreman::new(zones, Logger::new(logger_in));
