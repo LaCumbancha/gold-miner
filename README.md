@@ -3,9 +3,11 @@ Trabajo Práctico N°2 | 75.59 - Técnicas de Programación Concurrentes | FIUBA
 
 #### Integrantes del Grupo
 Raña, Cristian Ezequiel (padrón 95457)
+Centurión, Martín Leonardo (padrón 97874)
+Cabrera, María Florencia (padrón 97864)
 
 #### Fecha de Entrega
-Miércoles 4 de Septiembre de 2019
+Miércoles 4 de Diciembre de 2019
 
 ## Bootstrapping
 El presente proyecto utiliza el gestor de dependencias y paquetes **Cargo**. Para instalarlo:
