@@ -68,7 +68,7 @@ impl Foreman {
             miner_adjacent_channels.remove(&id);
             let miner_logger = self.logger.clone();
 
-            self.logger.info(format!("Creating miner {}", id.clone()));
+            //self.logger.info(format!("Creating miner {}", id.clone()));
             let handler: JoinHandle<()> = thread::spawn(move || {
                 let mut miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels, miner_logger);
                 miner.work();
@@ -81,14 +81,19 @@ impl Foreman {
     pub fn start_mining(&mut self) {
         print!("FOREMAN: Ok, it's showtime. Let's get this shit done. (Press [ENTER] to make miners start digging)");
         self.wait();
+        let mut nroIter = 0;
         for section in &self.sections {
+            if self.miners_channels.len()==0{
+                break;
+            }
             println!();
-            print!("FOREMAN: Yo' filthy rats! Go find me some gold in Section {}! ", section.0);
-
+            println!("[{}] FOREMAN: Yo' filthy rats! Go find me some gold in Section {}! ", nroIter, section.0);
+            println!("* Information: In Section {} there is {} probability of extracting gold. *", section.0, 1.0-section.1);
+            
             self.miners_channels.iter()
                 .for_each(|(id, channel)|
                     channel.checked_send(
-                        Start(*section),
+                        Start(section.clone()),
                         Foreman::send_callback(id.clone(), self.logger.clone()),
                     )
                 );
@@ -103,8 +108,9 @@ impl Foreman {
                         Foreman::send_callback(id.clone(), self.logger.clone()),
                     )
                 );
-        }
 
+            nroIter+=1;
+        }
         self.finish();
     }
 
@@ -116,7 +122,8 @@ impl Foreman {
 
     fn send_callback(miner_id: MinerId, logger: Logger) -> impl FnOnce(MiningMessage) {
         // TODO: Implement errors log.
-        move |message: MiningMessage| { logger.error(format!("Error sending {:?} to miner {}", message, miner_id)) }
+        move |message: MiningMessage| { //logger.error(format!("Error sending {:?} to miner {}", message, miner_id)) 
+        }
     }
 
     fn finish(&mut self) {

@@ -57,7 +57,7 @@ impl Miner {
 
     fn stop_mining(&mut self) {
         // TODO: Check errors when sending message.
-        println!("Miner {} stopped round!", self.miner_id);
+        println!("Miner {} stopped round!He got {} gold dug.", self.miner_id, self.round.gold_dug);
         self.adjacent_miners.iter()
             .for_each(|(id, channel)|
                 channel.checked_send(
