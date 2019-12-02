@@ -82,31 +82,27 @@ impl Foreman {
         println!("FOREMAN: Ok, it's showtime. Let's get this shit done.");
 
         for section in &self.sections {
-            if self.miners_channels.len() == 0 {
-                break;
-            }
+            if self.miners_channels.len() == 0 { break; }
             println!("FOREMAN: Yo' filthy rats! Go find me some gold in Section {}! (Press [ENTER] to make miners start digging)", section.0);
             self.wait();
             self.logger.info(format!("In Section {} there is {} probability of extracting gold", section.0, 1.0 - section.1));
 
-            self.miners_channels.iter()
-                .for_each(|(id, channel)|
-                    channel.checked_send(
-                        Start(section.clone()),
-                        Foreman::send_callback(id.clone(), self.logger.clone()),
-                    )
-                );
+            self.miners_channels.iter().for_each(|(id, channel)|
+                channel.checked_send(
+                    Start(section.clone()),
+                    Foreman::send_callback(id.clone(), self.logger.clone()),
+                )
+            );
 
-            print!("(Press [ENTER] to make miners stop digging)");
+            print!("Press [ENTER] to make miners stop digging.");
             self.wait();
 
-            self.miners_channels.iter()
-                .for_each(|(id, channel)|
-                    channel.checked_send(
-                        Stop,
-                        Foreman::send_callback(id.clone(), self.logger.clone()),
-                    )
-                );
+            self.miners_channels.iter().for_each(|(id, channel)|
+                channel.checked_send(
+                    Stop,
+                    Foreman::send_callback(id.clone(), self.logger.clone()),
+                )
+            );
         }
         self.finish();
     }

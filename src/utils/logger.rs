@@ -35,8 +35,21 @@ impl LoggerWriter {
         buffer.push_str(LOGS_FOLDER);
         buffer.push_str("/");
         buffer.push_str(now.year().to_string().as_str());
-        buffer.push_str(now.month().to_string().as_str());
-        buffer.push_str(now.day().to_string().as_str());
+
+        if now.month() < 10 {
+            buffer.push_str("0");
+            buffer.push_str(now.month().to_string().as_str());
+        } else {
+            buffer.push_str(now.month().to_string().as_str());
+        }
+
+        if now.day() < 10 {
+            buffer.push_str("0");
+            buffer.push_str(now.day().to_string().as_str());
+        } else {
+            buffer.push_str(now.day().to_string().as_str());
+        }
+
         buffer.push_str(".log");
         return buffer
     }
