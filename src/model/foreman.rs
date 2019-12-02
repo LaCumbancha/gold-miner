@@ -80,12 +80,13 @@ impl Foreman {
 
     pub fn start_mining(&mut self) {
         print!("FOREMAN: Ok, it's showtime. Let's get this shit done. (Press [ENTER] to make miners start digging)");
-        self.wait();
+
         let mut nroIter = 0;
         for section in &self.sections {
             if self.miners_channels.len()==0{
                 break;
             }
+            self.wait();
             println!();
             println!("[{}] FOREMAN: Yo' filthy rats! Go find me some gold in Section {}! ", nroIter, section.0);
             println!("* Information: In Section {} there is {} probability of extracting gold. *", section.0, 1.0-section.1);

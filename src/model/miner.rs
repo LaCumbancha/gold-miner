@@ -1,23 +1,22 @@
+use std::sync::Arc;
 use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
+use std::sync::Mutex;
 use std::collections::HashMap;
-use std::iter;
-
-extern crate rand;
-
-use rand::Rng;
-
-use crate::utils::utils::CheckedSend;
-use crate::model::map::{Gold, SectionProbability};
+use std::{thread};
+use rand::{thread_rng, Rng};
 use crate::model::communication::MiningMessage;
 use crate::model::communication::RoundResults;
 use crate::model::communication::MiningMessage::*;
+use crate::model::map::Gold;
+use crate::model::map::SectionProbability;
 use crate::utils::logger::Logger;
+use crate::utils::utils::CheckedSend;
 
 pub type MinerId = i32;
 
 struct RoundStats {
-    gold_dug: Gold,
+    gold_dug: Arc<Mutex<Gold>>,
     results_received: HashMap<MinerId, Gold>,
 }
 
@@ -27,6 +26,7 @@ pub struct Miner {
     receiving_channel: Receiver<MiningMessage>,
     adjacent_miners: HashMap<MinerId, Sender<MiningMessage>>,
     round: RoundStats,
+    keep_mining: Arc<Mutex<bool>>,
     logger: Logger,
 }
 
@@ -39,31 +39,47 @@ impl Miner {
             adjacent_miners: miners,
             round: RoundStats {
                 results_received: HashMap::new(),
-                gold_dug: 0,
+                gold_dug: Arc::new(Mutex::new(0 as Gold)),
             },
-            logger
+	          keep_mining: Arc::new(Mutex::new(false)),
+            logger,
         }
     }
+    fn mine(keep_mining: Arc<Mutex<bool>>,gold_dug:Arc<Mutex<Gold>>, prob: SectionProbability){
+	      *gold_dug.lock().unwrap() = 0;
+        let mut rng = thread_rng();
+	      while *keep_mining.lock().unwrap() {
+	          *gold_dug.lock().unwrap()+=rng.gen_bool(prob) as i32;
 
-    fn start_round(&mut self, message: SectionProbability) {
-        println!("Miner {} started round!", self.miner_id);
-        let mut random_generator = rand::thread_rng();
-        self.round = RoundStats { results_received: HashMap::new(), gold_dug: 0 };
-        self.round.gold_dug = iter::repeat(1)
-            .take(10)
-            .map(|_| random_generator.gen_range(0.0, 1.0) as f64)
-            .filter(|x| x > &message as &f64).count() as Gold;
+	      }
+    }
+
+    fn start_mining(&mut self, prob: SectionProbability) {
+	      let mut keep_mining = self.keep_mining.lock().unwrap();
+	      *keep_mining = true;
+
+	      let keep_mining = Arc::clone(&self.keep_mining);
+	      let gold_dug = Arc::clone(&self.round.gold_dug);
+	      let prob_clone = prob.clone();
+	      Some(thread::spawn(move || {Miner::mine(keep_mining,gold_dug, prob_clone)}));
+
+	      println!("Miner {} started round!", self.miner_id);
+        self.round = RoundStats { results_received: HashMap::new(), gold_dug: Arc::new(Mutex::new(0 as Gold)) };
+
     }
 
     fn stop_mining(&mut self) {
         // TODO: Check errors when sending message.
-        println!("Miner {} stopped round!He got {} gold dug.", self.miner_id, self.round.gold_dug);
-        self.adjacent_miners.iter()
+	      let mut keep_mining = self.keep_mining.lock().unwrap();
+	      *keep_mining = false;
+	      let gold_dug = self.round.gold_dug.lock().unwrap();
+        println!("Miner {} stopped round! He got {} gold dug.", self.miner_id, *gold_dug);
+	      self.adjacent_miners.iter()
             .for_each(|(id, channel)|
-                channel.checked_send(
-                    ResultsNotification((self.miner_id, self.round.gold_dug)),
-                    Miner::send_callback(*id),
-                )
+                      channel.checked_send(
+			                    ResultsNotification((self.miner_id, *gold_dug)),
+			                    Miner::send_callback(*id),
+                      )
             );
     }
 
@@ -84,12 +100,14 @@ impl Miner {
     pub fn work(&mut self) {
         loop {
             match self.receiving_channel.recv().unwrap() {
-                Start(section) => self.start_round(section.1),
+                Start(section) => self.start_mining(section.1),
                 Stop => self.stop_mining(),
                 ResultsNotification(rr) => self.save_result(rr),
                 ILeft(id) => self.remove_miner(id),
                 TransferGold(g) => self.receive_gold(g)
             }
         }
+
     }
 }
+
