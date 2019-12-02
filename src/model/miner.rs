@@ -73,14 +73,17 @@ impl Miner {
         *keep_mining = false;
 
         let gold_dug = self.round.gold_dug.lock().unwrap();
-        self.logger.info(format!("Miner {} stopped round! He got {} gold dug.", self.miner_id, *gold_dug));
+        self.logger.info(format!("Miner {} stopped round! He got {} pieces of gold dug.", self.miner_id, *gold_dug));
         self.adjacent_miners.iter()
             .for_each(|(id, channel)|
                 channel.checked_send(
                     ResultsNotification((self.miner_id, *gold_dug)),
-                    Miner::send_callback(*id),
+                    Miner::send_callback(*id, self.logger.clone()),
                 )
             );
+
+        // TODO: Uncomment when communication with foreman is established.
+        println!("MINER #{}: I've found {} pieces of gold!", self.miner_id, gold_dug);
     }
 
     fn save_result(&mut self, (id, gold): RoundResults) { self.round.results_received.insert(id, gold); }
@@ -93,8 +96,10 @@ impl Miner {
         self.gold_total += gold;
     }
 
-    fn send_callback(miner_id: MinerId) -> impl FnOnce(MiningMessage) {
-        move |message: MiningMessage| { println!("Error sending {:?} to miner {}", message, miner_id) }
+    fn send_callback(miner_id: MinerId, logger: Logger) -> impl FnOnce(MiningMessage) {
+        move |message: MiningMessage| {
+            logger.error(format!("Error sending {:?} to miner {}", message, miner_id))
+        }
     }
 
     pub fn work(&mut self) {

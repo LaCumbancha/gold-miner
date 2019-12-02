@@ -1,5 +1,4 @@
 use std::{thread, io};
-use std::io::Write;
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
 use std::thread::{JoinHandle, sleep};
@@ -20,7 +19,6 @@ use std::time::Duration;
 pub type MinerId = i32;
 
 pub struct Foreman {
-    miners: Vec<Miner>,
     sections: Vec<MapSection>,
     miners_channels: HashMap<MinerId, Sender<MiningMessage>>,
     thread_handlers: Vec<JoinHandle<()>>,
@@ -40,7 +38,6 @@ impl Foreman {
         }
 
         Foreman {
-            miners: Vec::new(),
             sections: region_sections,
             miners_channels: HashMap::new(),
             thread_handlers: Vec::new(),
@@ -94,7 +91,7 @@ impl Foreman {
                 )
             );
 
-            print!("Press [ENTER] to make miners stop digging.");
+            println!("Press [ENTER] to make miners stop digging.");
             self.wait();
 
             self.miners_channels.iter().for_each(|(id, channel)|
@@ -108,7 +105,6 @@ impl Foreman {
     }
 
     fn wait(&self) {
-        io::stdout().flush().expect("Error flushing stdout.");
         let mut buffer = String::new();
         io::stdin().read_line(&mut buffer).expect("Failed to read from stdin.");
     }

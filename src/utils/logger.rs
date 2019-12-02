@@ -16,7 +16,7 @@ impl LoggerWriter {
 
     pub fn run(receiver: Receiver<String>) {
         fs::create_dir_all(LOGS_FOLDER).expect("Couldn't create log folder!");
-        let mut file = OpenOptions::new()
+        let file = OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
@@ -25,7 +25,7 @@ impl LoggerWriter {
         let mut line_writer = LineWriter::new(file);
 
         for received in receiver {
-            line_writer.write_all(received.as_bytes());
+            line_writer.write_all(received.as_bytes()).expect("Error writing log!");
         }
     }
 
