@@ -50,13 +50,16 @@ impl Miner {
         let mut rng = thread_rng();
 	      while *keep_mining.lock().unwrap() {
 	          *gold_dug.lock().unwrap()+=rng.gen_bool(prob) as i32;
-
-	      }
+        }
+        println!("Miner got {} gold dug.", *gold_dug.lock().unwrap());
     }
 
     fn start_mining(&mut self, prob: SectionProbability) {
 	      let mut keep_mining = self.keep_mining.lock().unwrap();
 	      *keep_mining = true;
+
+        self.round.results_received = HashMap::new();
+        *self.round.gold_dug.lock().unwrap() = 0;
 
 	      let keep_mining = Arc::clone(&self.keep_mining);
 	      let gold_dug = Arc::clone(&self.round.gold_dug);
@@ -64,7 +67,7 @@ impl Miner {
 	      Some(thread::spawn(move || {Miner::mine(keep_mining,gold_dug, prob_clone)}));
 
 	      println!("Miner {} started round!", self.miner_id);
-        self.round = RoundStats { results_received: HashMap::new(), gold_dug: Arc::new(Mutex::new(0 as Gold)) };
+
 
     }
 
@@ -72,6 +75,7 @@ impl Miner {
         // TODO: Check errors when sending message.
 	      let mut keep_mining = self.keep_mining.lock().unwrap();
 	      *keep_mining = false;
+
 	      let gold_dug = self.round.gold_dug.lock().unwrap();
         println!("Miner {} stopped round! He got {} gold dug.", self.miner_id, *gold_dug);
 	      self.adjacent_miners.iter()
