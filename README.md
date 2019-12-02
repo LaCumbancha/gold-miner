@@ -2,9 +2,9 @@
 Trabajo Práctico N°2 | 75.59 - Técnicas de Programación Concurrentes | FIUBA
 
 #### Integrantes del Grupo
+Cabrera, María Florencia (padrón 97864)<br>
+Centurión, Martín Leonardo (padrón 97874)<br>
 Raña, Cristian Ezequiel (padrón 95457)
-Centurión, Martín Leonardo (padrón 97874)
-Cabrera, María Florencia (padrón 97864)
 
 #### Fecha de Entrega
 Miércoles 4 de Diciembre de 2019

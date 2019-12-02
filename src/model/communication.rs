@@ -10,6 +10,7 @@ pub enum MiningMessage {
     Stop,
     ResultsNotification(RoundResults),
     ILeft(MinerId),
-    TransferGold(Gold)
+    TransferGold(Gold),
+    ByeBye
 }
 

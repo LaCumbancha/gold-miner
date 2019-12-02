@@ -6,7 +6,7 @@ use std::num::ParseIntError;
 use crate::model::system::System;
 
 static DEFAULT_ZONES: i32 = 5;
-static DEFAULT_MINERS: i32 = 33;
+static DEFAULT_MINERS: i32 = 5;
 
 pub fn run() {
     let mut exit_option: bool = false;

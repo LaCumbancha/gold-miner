@@ -3,7 +3,7 @@ use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::sync::Mutex;
 use std::collections::HashMap;
-use std::{thread};
+use std::thread;
 use rand::{thread_rng, Rng};
 use crate::model::communication::MiningMessage;
 use crate::model::communication::RoundResults;
@@ -41,49 +41,45 @@ impl Miner {
                 results_received: HashMap::new(),
                 gold_dug: Arc::new(Mutex::new(0 as Gold)),
             },
-	          keep_mining: Arc::new(Mutex::new(false)),
+            keep_mining: Arc::new(Mutex::new(false)),
             logger,
         }
     }
-    fn mine(keep_mining: Arc<Mutex<bool>>,gold_dug:Arc<Mutex<Gold>>, prob: SectionProbability){
-	      *gold_dug.lock().unwrap() = 0;
+    fn mine(keep_mining: Arc<Mutex<bool>>, gold_dug: Arc<Mutex<Gold>>, prob: SectionProbability) {
+        *gold_dug.lock().unwrap() = 0;
         let mut rng = thread_rng();
-	      while *keep_mining.lock().unwrap() {
-	          *gold_dug.lock().unwrap()+=rng.gen_bool(prob) as i32;
+        while *keep_mining.lock().unwrap() {
+            *gold_dug.lock().unwrap() += rng.gen_bool(prob) as i32;
         }
-        println!("Miner got {} gold dug.", *gold_dug.lock().unwrap());
     }
 
     fn start_mining(&mut self, prob: SectionProbability) {
-	      let mut keep_mining = self.keep_mining.lock().unwrap();
-	      *keep_mining = true;
+        let mut keep_mining = self.keep_mining.lock().unwrap();
+        *keep_mining = true;
 
         self.round.results_received = HashMap::new();
         *self.round.gold_dug.lock().unwrap() = 0;
 
-	      let keep_mining = Arc::clone(&self.keep_mining);
-	      let gold_dug = Arc::clone(&self.round.gold_dug);
-	      let prob_clone = prob.clone();
-	      Some(thread::spawn(move || {Miner::mine(keep_mining,gold_dug, prob_clone)}));
+        let keep_mining = Arc::clone(&self.keep_mining);
+        let gold_dug = Arc::clone(&self.round.gold_dug);
+        let prob_clone = prob.clone();
+        Some(thread::spawn(move || { Miner::mine(keep_mining, gold_dug, prob_clone) }));
 
-	      println!("Miner {} started round!", self.miner_id);
-
-
+        self.logger.debug(format!("Miner {} started round!", self.miner_id));
     }
 
     fn stop_mining(&mut self) {
-        // TODO: Check errors when sending message.
-	      let mut keep_mining = self.keep_mining.lock().unwrap();
-	      *keep_mining = false;
+        let mut keep_mining = self.keep_mining.lock().unwrap();
+        *keep_mining = false;
 
-	      let gold_dug = self.round.gold_dug.lock().unwrap();
-        println!("Miner {} stopped round! He got {} gold dug.", self.miner_id, *gold_dug);
-	      self.adjacent_miners.iter()
+        let gold_dug = self.round.gold_dug.lock().unwrap();
+        self.logger.info(format!("Miner {} stopped round! He got {} gold dug.", self.miner_id, *gold_dug));
+        self.adjacent_miners.iter()
             .for_each(|(id, channel)|
-                      channel.checked_send(
-			                    ResultsNotification((self.miner_id, *gold_dug)),
-			                    Miner::send_callback(*id),
-                      )
+                channel.checked_send(
+                    ResultsNotification((self.miner_id, *gold_dug)),
+                    Miner::send_callback(*id),
+                )
             );
     }
 
@@ -106,12 +102,15 @@ impl Miner {
             match self.receiving_channel.recv().unwrap() {
                 Start(section) => self.start_mining(section.1),
                 Stop => self.stop_mining(),
-                ResultsNotification(rr) => self.save_result(rr),
+                ResultsNotification(results) => self.save_result(results),
                 ILeft(id) => self.remove_miner(id),
-                TransferGold(g) => self.receive_gold(g)
+                TransferGold(gold) => self.receive_gold(gold),
+                ByeBye => {
+                    self.logger.info(format!("Miner {} finished working!", self.miner_id));
+                    break;
+                }
             }
         }
-
     }
 }
 

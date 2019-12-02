@@ -22,7 +22,7 @@ impl System {
         foreman.hire_miners(miners);
         foreman.start_mining();
 
-        //logger_handler.join().unwrap();
+        logger_handler.join().unwrap();
     }
 
 }
