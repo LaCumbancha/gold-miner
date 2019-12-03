@@ -11,6 +11,7 @@ pub enum MiningMessage {
     ResultsNotification(RoundResults),
     ILeft(MinerId),
     TransferGold(Gold),
-    ByeBye
+    ByeBye,
+    Ready
 }
 
