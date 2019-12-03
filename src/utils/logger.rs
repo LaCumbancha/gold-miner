@@ -7,13 +7,37 @@ use std::io::{Write, LineWriter};
 
 use crate::utils::utils::Logging;
 use crate::utils::utils::TimeLogged;
+use core::fmt;
 
 static LOGS_FOLDER: &str = "./logs";
+
+#[derive(Copy, Debug, Clone, PartialEq)]
+pub enum LoggerLevel { DEBUG = 1, INFO = 2, ERROR = 3 }
+
+impl fmt::Display for LoggerLevel {
+    fn fmt(&self, format: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            LoggerLevel::DEBUG => write!(format, "DEBUG"),
+            LoggerLevel::INFO => write!(format, "INFO"),
+            LoggerLevel::ERROR => write!(format, "ERROR")
+        }
+    }
+}
+
+impl LoggerLevel {
+    pub(crate) fn from_i32(value: i32) -> LoggerLevel {
+        match value {
+            1 => LoggerLevel::DEBUG,
+            2 => LoggerLevel::INFO,
+            3 => LoggerLevel::ERROR,
+            _ => panic!("Unknown value: {}", value)
+        }
+    }
+}
 
 pub struct LoggerWriter {}
 
 impl LoggerWriter {
-
     pub fn run(receiver: Receiver<String>) {
         fs::create_dir_all(LOGS_FOLDER).expect("Couldn't create log folder!");
         let file = OpenOptions::new()
@@ -51,32 +75,34 @@ impl LoggerWriter {
         }
 
         buffer.push_str(".log");
-        return buffer
+        return buffer;
     }
-
 }
 
 #[derive(Clone)]
 pub struct Logger {
-    sender: Sender<String>
+    sender: Sender<String>,
+    logger_level: LoggerLevel,
 }
 
 impl Logger {
-
-    pub fn new(sender: Sender<String>) -> Logger {
-        Logger { sender }
+    pub fn new(sender: Sender<String>, logger_level: LoggerLevel) -> Logger {
+        Logger { sender, logger_level }
     }
 
     pub fn debug(&self, message: String) {
-        self.sender.log(format!("[DEBUG] {}\n", message.time_logged()));
+        if self.logger_level == LoggerLevel::DEBUG {
+            self.sender.log(format!("[DEBUG] {}\n", message.time_logged()));
+        }
     }
 
     pub fn info(&self, message: String) {
-        self.sender.log(format!("[INFO] {}\n", message.time_logged()));
+        if self.logger_level != LoggerLevel::ERROR {
+            self.sender.log(format!("[INFO] {}\n", message.time_logged()));
+        }
     }
 
     pub fn error(&self, message: String) {
         self.sender.log(format!("[ERROR] {}\n", message.time_logged()));
     }
-
 }
