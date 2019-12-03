@@ -92,7 +92,7 @@ impl Miner {
 
     fn save_result(&mut self, (id, gold): RoundResults) { 
         self.round.results_received.insert(id, gold);
-        if self.round.results_received.len() == self.adjacent_miners.len()-1{ //All minners stoped and sended their results
+        if self.round.results_received.len() == self.adjacent_miners.len()-1{ //All miners stoped and sended their results
             let (minor, major) =self.get_min_max_round_results();
             if minor.len() == 1{ //There is a loser
                 if minor[0].0 == self.miner_id{ //this miner is the loser
@@ -121,13 +121,6 @@ impl Miner {
 
             //There is not loser or this miner is not the winner
             //says "I'm ready" to the foreman
-            /*let id_foreman = 0;
-            let foreman_channel = self.adjacent_miners.get(&id_foreman);
-            foreman_channel.checked_send(
-                Ready,
-                Miner::send_callback( id_foreman, self.logger.clone())
-            );*/
-
             self.ready();
         }
     }
@@ -145,6 +138,13 @@ impl Miner {
                     )
                 };
             });
+
+        /*let id_foreman = 0;
+        let foreman_channel = self.adjacent_miners.get(&id_foreman);
+        foreman_channel.checked_send(
+            Ready,
+            Miner::send_callback(id_foreman, self.logger.clone())
+        );*/
     }
 
     fn remove_miner(&mut self, id: MinerId) {
@@ -156,12 +156,6 @@ impl Miner {
     fn receive_gold(&mut self, gold: Gold) {
         self.gold_total += gold;
         //says "I'm ready" to the foreman
-        /*let id_foreman = 0;
-        let foreman_channel = self.adjacent_miners.get(&id_foreman);
-        foreman_channel.checked_send(
-            Ready,
-            Miner::send_callback(id_foreman, self.logger.clone())
-        );*/
         self.wait-=1;
         self.ready();
     }

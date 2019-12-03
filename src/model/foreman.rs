@@ -1,3 +1,6 @@
+extern crate termion;
+use termion::{color, style};
+
 use std::{thread, io};
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
@@ -33,8 +36,8 @@ pub struct Foreman {
 
 impl Foreman {
     pub fn new(sections: i32, logger: Logger) -> Foreman {
-        println!("FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.");
-        println!("FOREMAN: Today we'll be exploring this {} zones.", sections);
+        println!("{}FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.{}",color::Fg(color::Yellow),style::Reset);
+        println!("{}FOREMAN: Today we'll be exploring this {} zones.{}", color::Fg(color::Yellow), sections,style::Reset);
 
         // Generating sections randomly.
         let mut random_generator: ThreadRng = rand::thread_rng();
@@ -58,7 +61,7 @@ impl Foreman {
     }
 
     pub fn hire_miners(&mut self, miners: i32) {
-        println!("FOREMAN: But first, we need some cheap manpower. We'll go to the town and get the first {} morons that show up.", miners);
+        println!("{}FOREMAN: But first, we need some cheap manpower. We'll go to the town and get the first {} morons that show up.{}", color::Fg(color::Yellow),miners,style::Reset);
 
         // Creating channels for every miner.
         let mut channels_in: HashMap<MinerId, Sender<MiningMessage>> = HashMap::new();
@@ -90,12 +93,13 @@ impl Foreman {
     }
 
     pub fn start_mining(&mut self) {
-        println!("FOREMAN: Ok, it's showtime. Let's get this shit done.");
+        println!("{}FOREMAN: Ok, it's showtime. Let's get this shit done.{}",color::Fg(color::Yellow),style::Reset);
 
         for section in self.sections.clone() {
             if self.miners_channels.len() == 1 { break; }
             println!();
-            println!("FOREMAN: Yo' filthy rats! Go find me some gold in Section {}! (Press [ENTER] to make miners start digging)", section.0);
+            println!("{}FOREMAN: Yo' filthy rats! Go find me some gold in Section {}!{}", color::Fg(color::Yellow),section.0,style::Reset);
+            println!("{}Press [ENTER] to make miners {}start{}{} digging{}",color::Fg(color::Red), style::Bold, style::Reset, color::Fg(color::Red), color::Fg(color::Reset));
             self.wait();
             self.logger.info(format!("In Section {} there is {} probability of extracting gold", section.0, 1.0 - section.1));
 
@@ -106,7 +110,7 @@ impl Foreman {
                 )
             );
 
-            println!("Press [ENTER] to make miners stop digging.");
+            println!("{}Press [ENTER] to make miners {}stop{}{} digging.{}",color::Fg(color::Red), style::Bold, style::Reset, color::Fg(color::Red),color::Fg(color::Reset));
             self.wait();
 
             self.miners_channels.iter().for_each(|(id, channel)|
@@ -156,22 +160,15 @@ impl Foreman {
         println!();
         self.results_received.iter()
         .for_each(|(id, gold)|{
-            println!("Miner number {} extracted {} gold", id, gold);
+            println!("{}Miner number {} extracted {} gold{}", color::Fg(color::Green),id, gold,color::Fg(color::Reset));
         });
     }
 
-    fn save_result(&mut self, (id, gold): RoundResults) { 
-        //TODO: que sume las pepitas de cada minero*************************************
-/*
-        let gold_old = self.results_received.get(&id);
-        self.results_received.insert(id, &gold_old+gold);*/
+    fn save_result(&mut self, (id, gold): RoundResults) {
 
-        //self.results_received.insert(id, gold);
-        //TODO: check who is the miner with less gold
         if let Some(x) = self.results_received.get_mut(&id) {
             *x = *x+gold;
         }
-        //assert_eq!(map[&1], "b");
     }
 
     fn remove_miner(&mut self, id: MinerId) {
