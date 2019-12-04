@@ -137,7 +137,7 @@ impl Foreman {
                         miners_ready += 1;
                     }
                     ResultsNotification((id, gold)) => {
-                        self.logger.debug(format!("Foreman received {} pieces of gold miner {}.", gold, id));
+                        self.logger.debug(format!("Foreman received {} pieces of gold from miner {}.", gold, id));
                         self.save_result((id, gold));
                     }
                     ILeft(id) => {

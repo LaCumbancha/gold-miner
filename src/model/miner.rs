@@ -86,6 +86,7 @@ impl Miner {
                 )
             );
 
+        self.gold_total += *gold_dug;
         println!("MINER #{}: I've found {} pieces of gold!", self.miner_id, gold_dug);
     }
 
