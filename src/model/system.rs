@@ -18,8 +18,7 @@ impl System {
         });
 
         let mut foreman: Foreman = Foreman::new(zones, Logger::new(logger_in, logger_level));
-        foreman.hire_miners(miners);
-        foreman.start_mining();
+        foreman.work(miners);
 
         drop(foreman);
         logger_handler.join().unwrap();

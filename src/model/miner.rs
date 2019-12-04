@@ -86,34 +86,36 @@ impl Miner {
                 )
             );
 
-        // TODO: Uncomment when communication with foreman is established.
         println!("MINER #{}: I've found {} pieces of gold!", self.miner_id, gold_dug);
     }
 
-    fn save_result(&mut self, (id, gold): RoundResults) { 
+    fn save_result(&mut self, (id, gold): RoundResults) {
         self.round.results_received.insert(id, gold);
-        if self.round.results_received.len() == self.adjacent_miners.len()-1{ //All miners stoped and sended their results
-            let (minor, major) =self.get_min_max_round_results();
-            if minor.len() == 1{ //There is a loser
-                if minor[0].0 == self.miner_id{ //this miner is the loser
+        if self.round.results_received.len() == self.adjacent_miners.len() - 1 { //All miners stoped and sended their results
+            let (minor, major) = self.get_min_max_round_results();
+            if minor.len() == 1 {
+                self.logger.debug(format!("Miner {} detected a round loser.", self.miner_id));
+                if minor[0].0 == self.miner_id {
+                    self.logger.info(format!("Miner {} detected himself as the round loser.", self.miner_id));
                     self.adjacent_miners.iter()
-                    .for_each(|(id, channel)|{
-                        if id==&major[0].0{ //gives his golds
+                        .for_each(|(id, channel)| {
+                            if id == &major[0].0 {
+                                self.logger.info(format!("Miner {} send his {} pieces of gold to miner {}.", self.miner_id, self.gold_total, id));
+                                channel.checked_send(
+                                    TransferGold(self.gold_total),
+                                    Miner::send_callback(*id, self.logger.clone()),
+                                )
+                            };
+                            self.logger.info(format!("Miner {} send an 'I Left' message to miner {}.", self.miner_id, id));
                             channel.checked_send(
-                                TransferGold(self.gold_total),
-                                Miner::send_callback(*id, self.logger.clone())
+                                ILeft(self.miner_id),
+                                Miner::send_callback(*id, self.logger.clone()),
                             )
-                        };
-                        //says bye
-                        channel.checked_send(
-                            ILeft(self.miner_id),
-                            Miner::send_callback(*id, self.logger.clone())
-                        )
-                    });
+                        });
                     return;
                 }
-                self.wait+=1;
-                if major[0].0 == self.miner_id{//this miner is the winner
+                self.wait += 1;
+                if major[0].0 == self.miner_id {//this miner is the winner
                     self.wait += 1;
                     return; //wait gold dugs
                 }
@@ -126,15 +128,16 @@ impl Miner {
     }
 
     fn ready(&mut self) {
-        if self.wait != 0{
+        if self.wait != 0 {
             return;
         }
         self.adjacent_miners.iter()
-            .for_each(|(id, channel)|{
-                if id==&0{
+            .for_each(|(id, channel)| {
+                if id == &0 {
+                    self.logger.info(format!("Miner {} send an 'I'm Ready' message to foreman.", self.miner_id));
                     channel.checked_send(
-                        Ready,
-                        Miner::send_callback( *id, self.logger.clone())
+                        Ready(self.miner_id),
+                        Miner::send_callback(*id, self.logger.clone()),
                     )
                 };
             });
@@ -149,14 +152,14 @@ impl Miner {
 
     fn remove_miner(&mut self, id: MinerId) {
         self.adjacent_miners.remove(&id);
-        self.wait-=1;
+        self.wait -= 1;
         self.ready();
     }
 
     fn receive_gold(&mut self, gold: Gold) {
         self.gold_total += gold;
         //says "I'm ready" to the foreman
-        self.wait-=1;
+        self.wait -= 1;
         self.ready();
     }
 
@@ -169,40 +172,55 @@ impl Miner {
     pub fn work(&mut self) {
         loop {
             match self.receiving_channel.recv().unwrap() {
-                Start(section) => self.start_mining(section.1),
-                Stop => self.stop_mining(),
-                ResultsNotification(results) => self.save_result(results),
-                ILeft(id) => self.remove_miner(id),
-                TransferGold(gold) => self.receive_gold(gold),
+                Start(section) => {
+                    self.logger.debug(format!("Miner {} received a 'Start' message.", self.miner_id));
+                    self.start_mining(section.1)
+                },
+                Stop => {
+                    self.logger.debug(format!("Miner {} received a 'Stop' message.", self.miner_id));
+                    self.stop_mining()
+                },
+                ResultsNotification(results) => {
+                    self.logger.debug(format!("Miner {} was informed that miner {} dug {} pieces of gold.", self.miner_id, results.0, results.1));
+                    self.save_result(results)
+                },
+                ILeft(id) => {
+                    self.logger.debug(format!("Miner {} received an 'I Left' message from miner {}.", self.miner_id, id));
+                    self.remove_miner(id)
+                },
+                TransferGold(gold) => {
+                    self.logger.debug(format!("Miner {} received {} pieces of gold from the round loser.", self.miner_id, gold));
+                    self.receive_gold(gold)
+                },
                 ByeBye => {
                     self.logger.info(format!("Miner {} finished working!", self.miner_id));
                     break;
-                },
-                _=>{}
+                }
+                _ => {}
             }
         }
     }
 
-    fn get_min_max_round_results(&mut self) -> (Vec<(MinerId, Gold)>,Vec<(MinerId, Gold)>){
+    fn get_min_max_round_results(&mut self) -> (Vec<(MinerId, Gold)>, Vec<(MinerId, Gold)>) {
         let mut minor: Vec<(MinerId, Gold)> = Vec::new();
-        minor.push((0,i32::max_value() as Gold));
+        minor.push((0, i32::max_value() as Gold));
         let mut major: Vec<(MinerId, Gold)> = Vec::new();
-        major.push((0,i32::min_value() as Gold));
-        
-        self.round.results_received.insert(self.miner_id,self.round.gold_dug.lock().unwrap().clone());
+        major.push((0, i32::min_value() as Gold));
+
+        self.round.results_received.insert(self.miner_id, self.round.gold_dug.lock().unwrap().clone());
         self.round.results_received.iter()
-            .for_each(|(id,gold)|{
-                if minor[0].1 > *gold{
+            .for_each(|(id, gold)| {
+                if minor[0].1 > *gold {
                     minor.clear();
-                    minor.push((*id,*gold));
-                }else if minor[0].1 == *gold{
-                    minor.push((*id,*gold))
+                    minor.push((*id, *gold));
+                } else if minor[0].1 == *gold {
+                    minor.push((*id, *gold))
                 };
 
-                if major[0].1 <= *gold{//there is only winner
+                if major[0].1 <= *gold {//there is only winner
                     let min_id = cmp::min(major[0].0, *id);
                     major.clear();
-                    major.push((min_id,*gold));
+                    major.push((min_id, *gold));
                 }
             }
             );
