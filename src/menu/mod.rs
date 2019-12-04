@@ -30,20 +30,20 @@ pub fn run() {
                     1 => {
                         System::start(miners, zones, logger);
                         display_main_menu();
-                    },
+                    }
                     2 => {
                         let (new_zones, new_miners, new_logger) = settings_menu(zones, miners, logger);
                         zones = new_zones;
                         miners = new_miners;
                         logger = new_logger;
                         display_main_menu();
-                    },
+                    }
                     _ => {
                         print!("Wrong option! Retry: ");
                         io::stdout().flush().expect("Error flushing stdout.");
                     }
                 }
-            },
+            }
             Err(..) => {
                 print!("Wrong option! Retry: ");
                 io::stdout().flush().expect("Error flushing stdout.");
@@ -84,7 +84,7 @@ fn settings_menu(mut zones: i32, mut miners: i32, mut logger: LoggerLevel) -> (i
                             println!("Invalid option!");
                         }
                         display_settings_menu(zones, miners, logger);
-                    },
+                    }
                     2 => {
                         print!("Insert new zones: ");
                         io::stdout().flush().expect("Error flushing stdout.");
@@ -95,7 +95,7 @@ fn settings_menu(mut zones: i32, mut miners: i32, mut logger: LoggerLevel) -> (i
                             println!("Invalid option!");
                         }
                         display_settings_menu(zones, miners, logger);
-                    },
+                    }
                     3 => {
                         print!("Select new debug level: [1] DEBUG, [2] INFO, [3] ERROR ");
                         io::stdout().flush().expect("Error flushing stdout.");
@@ -117,7 +117,7 @@ fn settings_menu(mut zones: i32, mut miners: i32, mut logger: LoggerLevel) -> (i
                         io::stdout().flush().expect("Error flushing stdout.");
                     }
                 }
-            },
+            }
             Err(..) => {
                 print!("Wrong option! Retry: ");
                 io::stdout().flush().expect("Error flushing stdout.");
@@ -128,7 +128,7 @@ fn settings_menu(mut zones: i32, mut miners: i32, mut logger: LoggerLevel) -> (i
     return (zones, miners, logger);
 }
 
-fn display_settings_menu(zones: i32, miners:i32, logger: LoggerLevel) {
+fn display_settings_menu(zones: i32, miners: i32, logger: LoggerLevel) {
     println!();
     println!("Current settings:");
     println!("[1] Miners: {}", miners);

@@ -173,7 +173,6 @@ impl Foreman {
             handler.join().unwrap();
         }
 
-        // TODO: Join handlers
         self.results_received.iter().for_each(|(id, gold)| {
             println!("Miner #{} extracted {} gold.", id, gold);
         });

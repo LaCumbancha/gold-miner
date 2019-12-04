@@ -90,9 +90,9 @@ impl Miner {
         println!("MINER #{}: I've found {} pieces of gold!", self.miner_id, gold_dug);
     }
 
-    fn save_result(&mut self, (id, gold): RoundResults) -> bool{
+    fn save_result(&mut self, (id, gold): RoundResults) -> bool {
         self.round.results_received.insert(id, gold);
-        if self.round.results_received.len() == self.adjacent_miners.len() - 1 { //All miners stoped and sended their results
+        if self.round.results_received.len() == self.adjacent_miners.len() - 1 { // All miners stopped and sent their results.
             let (minor, major) = self.get_min_max_round_results();
             if minor.len() == 1 {
                 self.logger.debug(format!("Miner {} detected a round loser.", self.miner_id));
@@ -116,16 +116,15 @@ impl Miner {
                     return true;
                 }
                 self.wait += 1;
-                if major[0].0 == self.miner_id {//this miner is the winner
+                if major[0].0 == self.miner_id { // This miner is the winner
                     self.wait += 1;
-                    return false; //wait gold dugs
+                    return false; // Wait gold dug.
                 }
             }
 
-            //There is not loser or this miner is not the winner
-            //says "I'm ready" to the foreman
+            // There is no loser or this miner is not the winner.
+            // Says "I'm ready" to the foreman.
             self.ready();
-            
         }
         return false;
     }
@@ -161,7 +160,7 @@ impl Miner {
 
     fn receive_gold(&mut self, gold: Gold) {
         self.gold_total += gold;
-        //says "I'm ready" to the foreman
+        // Says "I'm ready" to the foreman
         self.wait -= 1;
         self.ready();
     }
@@ -178,28 +177,27 @@ impl Miner {
                 Start(section) => {
                     self.logger.debug(format!("Miner {} received a 'Start' message.", self.miner_id));
                     self.start_mining(section.1)
-                },
+                }
                 Stop => {
                     self.logger.debug(format!("Miner {} received a 'Stop' message.", self.miner_id));
                     self.stop_mining()
-                },
+                }
                 ResultsNotification(results) => {
                     self.logger.debug(format!("Miner {} was informed that miner {} dug {} pieces of gold.", self.miner_id, results.0, results.1));
-                    if self.save_result(results) == true{
+                    if self.save_result(results) == true {
                         break;
                     }
-                },
+                }
                 ILeft(id) => {
                     self.logger.debug(format!("Miner {} received an 'I Left' message from miner {}.", self.miner_id, id));
                     self.remove_miner(id)
-                },
+                }
                 TransferGold(gold) => {
                     self.logger.debug(format!("Miner {} received {} pieces of gold from the round loser.", self.miner_id, gold));
                     self.receive_gold(gold)
-                },
+                }
                 ByeBye => {
                     self.logger.info(format!("Miner {} finished working!", self.miner_id));
-                    //sleep(Duration::from_secs(10));
                     break;
                 }
                 _ => {}
@@ -218,15 +216,14 @@ impl Miner {
             .for_each(|(id, gold)| {
                 if minor[0].1 > *gold {
                     minor.clear();
-                    minor.push((*id,*gold));
-                   // println!("el menor oro es del id {}", *id);
-                }else if minor[0].1 == *gold{
-                    minor.push((*id,*gold))
+                    minor.push((*id, *gold));
+                } else if minor[0].1 == *gold {
+                    minor.push((*id, *gold))
                 };
 
-                if major[0].1 <= *gold{//there is only winner
+                if major[0].1 <= *gold {
                     let mut min_id = *id;
-                    if major[0].1 == *id{
+                    if major[0].1 == *id {
                         min_id = cmp::min(major[0].0, *id);
                     }
                     major.clear();
