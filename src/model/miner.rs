@@ -223,8 +223,7 @@ impl Miner {
                     major.clear();
                     major.push((min_id, *gold));
                 }
-            }
-            );
+            });
         return (minor, major);
     }
 }
