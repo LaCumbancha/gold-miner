@@ -102,7 +102,7 @@ fn settings_menu(mut zones: i32, mut miners: i32, mut logger: LoggerLevel) -> (i
                         let new_logger: Result<i32, ParseIntError> = utils::read_integer();
                         if new_logger.is_ok() {
                             let new_logger_value = new_logger.unwrap();
-                            if (1..4).contains(&new_logger_value) {
+                            if [1,2,3,4].contains(&new_logger_value) {
                                 logger = LoggerLevel::from_i32(new_logger_value);
                             } else {
                                 println!("Invalid option!");

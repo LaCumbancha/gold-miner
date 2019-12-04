@@ -25,6 +25,7 @@ struct RoundStats {
 pub struct Miner {
     miner_id: MinerId,
     gold_total: Gold,
+    gold_dug: Gold,
     receiving_channel: Receiver<MiningMessage>,
     adjacent_miners: HashMap<MinerId, Sender<MiningMessage>>,
     round: RoundStats,
@@ -38,6 +39,7 @@ impl Miner {
         Miner {
             miner_id: id,
             gold_total: 0,
+            gold_dug: 0,
             receiving_channel: channel_out,
             adjacent_miners: miners,
             round: RoundStats {
@@ -87,6 +89,7 @@ impl Miner {
             );
 
         self.gold_total += *gold_dug;
+        self.gold_dug += *gold_dug;
         println!("MINER #{}: I've found {} pieces of gold!", self.miner_id, gold_dug);
     }
 
@@ -199,6 +202,7 @@ impl Miner {
                 },
                 ByeBye => {
                     self.logger.info(format!("Miner {} finished working!", self.miner_id));
+                    println!("MINER #{} dug: {} and finished with {}", self.miner_id, self.gold_dug, self.gold_total);
                     //sleep(Duration::from_secs(10));
                     break;
                 }
