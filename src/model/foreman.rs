@@ -1,4 +1,5 @@
 extern crate termion;
+
 use termion::{color, style};
 
 use std::{thread, io};
@@ -19,7 +20,7 @@ use crate::model::communication::MiningMessage::*;
 use crate::utils::logger::Logger;
 use std::time::Duration;
 
-use crate::model::map::{Gold};
+use crate::model::map::Gold;
 use crate::model::communication::RoundResults;
 
 pub type MinerId = i32;
@@ -27,7 +28,6 @@ pub type MinerId = i32;
 pub struct Foreman {
     sections: Vec<MapSection>,
     miners_channels: HashMap<MinerId, Sender<MiningMessage>>,
-    thread_handlers: Vec<JoinHandle<()>>,
     logger: Logger,
     receiving_channel: Receiver<MiningMessage>,
     channel_in_foreman: Sender<MiningMessage>,
@@ -36,8 +36,8 @@ pub struct Foreman {
 
 impl Foreman {
     pub fn new(sections: i32, logger: Logger) -> Foreman {
-        println!("{}FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.{}",color::Fg(color::Yellow),style::Reset);
-        println!("{}FOREMAN: Today we'll be exploring this {} zones.{}", color::Fg(color::Yellow), sections,style::Reset);
+        println!("{}FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.{}", color::Fg(color::Yellow), style::Reset);
+        println!("{}FOREMAN: Today we'll be exploring this {} zones.{}", color::Fg(color::Yellow), sections, style::Reset);
 
         // Generating sections randomly.
         let mut random_generator: ThreadRng = rand::thread_rng();
@@ -48,11 +48,10 @@ impl Foreman {
 
         // Creating foreman channel.
         let (channel_in_foreman, channel_out_foreman): (Sender<MiningMessage>, Receiver<MiningMessage>) = channel();
-        
+
         Foreman {
             sections: region_sections,
             miners_channels: HashMap::new(),
-            thread_handlers: Vec::new(),
             logger,
             receiving_channel: channel_out_foreman,
             channel_in_foreman: channel_in_foreman,
@@ -60,8 +59,8 @@ impl Foreman {
         }
     }
 
-    pub fn hire_miners(&mut self, miners: i32) {
-        println!("{}FOREMAN: But first, we need some cheap manpower. We'll go to the town and get the first {} morons that show up.{}", color::Fg(color::Yellow),miners,style::Reset);
+    pub fn work(&mut self, miners: i32) {
+        println!("{}FOREMAN: But first, we need some cheap manpower. We'll go to the town and get the first {} morons that show up.{}", color::Fg(color::Yellow), miners, style::Reset);
 
         // Creating channels for every miner.
         let mut channels_in: HashMap<MinerId, Sender<MiningMessage>> = HashMap::new();
@@ -71,10 +70,17 @@ impl Foreman {
             self.miners_channels.insert(id, channel_in.clone());
             channels_in.insert(id, channel_in);
             channels_out.insert(id, channel_out);
-            self.results_received.insert(id,0);
+            self.results_received.insert(id, 0);
         }
         channels_in.insert(0, self.channel_in_foreman.clone());
 
+        let handlers: Vec<JoinHandle<()>> = self.hire_miners(miners, channels_in, channels_out);
+        self.start_mining();
+        self.finish(handlers);
+    }
+
+    fn hire_miners(&mut self, miners: i32, channels_in: HashMap<MinerId, Sender<MiningMessage>>, mut channels_out: HashMap<MinerId, Receiver<MiningMessage>>) -> Vec<JoinHandle<()>> {
+        let mut handlers = Vec::new();
         for id in 1..=miners {
             // Preparing channels for each miner.
             let miner_receiving_channel = channels_out.remove(&id).unwrap();
@@ -88,50 +94,61 @@ impl Foreman {
                 miner.work();
             });
 
-            self.thread_handlers.push(handler);
+            handlers.push(handler);
         }
+        return handlers;
     }
 
     pub fn start_mining(&mut self) {
-        println!("{}FOREMAN: Ok, it's showtime. Let's get this shit done.{}",color::Fg(color::Yellow),style::Reset);
+        println!("{}FOREMAN: Ok, it's showtime. Let's get this shit done.{}", color::Fg(color::Yellow), style::Reset);
 
         for section in self.sections.clone() {
             if self.miners_channels.len() == 1 { break; }
             println!();
-            println!("{}FOREMAN: Yo' filthy rats! Go find me some gold in Section {}!{}", color::Fg(color::Yellow),section.0,style::Reset);
-            println!("{}Press [ENTER] to make miners {}start{}{} digging{}",color::Fg(color::Red), style::Bold, style::Reset, color::Fg(color::Red), color::Fg(color::Reset));
+            println!("{}FOREMAN: Yo' filthy rats! Go find me some gold in Section {}!{}", color::Fg(color::Yellow), section.0, style::Reset);
+            println!("{}Press [ENTER] to make miners {}start{}{} digging{}", color::Fg(color::Red), style::Bold, style::Reset, color::Fg(color::Red), color::Fg(color::Reset));
             self.wait();
-            self.logger.info(format!("In Section {} there is {} probability of extracting gold", section.0, 1.0 - section.1));
+            self.logger.info(format!("In Section {} there is {} probability of extracting gold.", section.0, 1.0 - section.1));
 
-            self.miners_channels.iter().for_each(|(id, channel)|
+            self.miners_channels.iter().for_each(|(id, channel)| {
+                self.logger.debug(format!("Foreman sending a 'Start' message to miner {}.", id));
                 channel.checked_send(
                     Start(section.clone()),
                     Foreman::send_callback(id.clone(), self.logger.clone()),
                 )
-            );
+            });
 
-            println!("{}Press [ENTER] to make miners {}stop{}{} digging.{}",color::Fg(color::Red), style::Bold, style::Reset, color::Fg(color::Red),color::Fg(color::Reset));
+            println!("{}Press [ENTER] to make miners {}stop{}{} digging.{}", color::Fg(color::Red), style::Bold, style::Reset, color::Fg(color::Red), color::Fg(color::Reset));
             self.wait();
 
-            self.miners_channels.iter().for_each(|(id, channel)|
+            self.miners_channels.iter().for_each(|(id, channel)| {
+                self.logger.debug(format!("Foreman sending a 'Stop' message to miner {}.", id));
                 channel.checked_send(
                     Stop,
                     Foreman::send_callback(id.clone(), self.logger.clone()),
                 )
-            );
+            });
 
             let mut miners_ready = 0;
-            while miners_ready!=self.miners_channels.len() {
+            while miners_ready != self.miners_channels.len() {
                 match self.receiving_channel.recv().unwrap() {
-                    Ready => {miners_ready+=1;},
-                    ResultsNotification(results) => self.save_result(results),
-                    ILeft(id) => self.remove_miner(id),
-                    _=>{}
+                    Ready(id) => {
+                        self.logger.debug(format!("Foreman received an 'I'm Ready' message from miner {}.", id));
+                        miners_ready += 1;
+                    }
+                    ResultsNotification((id, gold)) => {
+                        self.logger.debug(format!("Foreman received {} pieces of gold from miner {}.", gold, id));
+                        self.save_result((id, gold));
+                    }
+                    ILeft(id) => {
+                        self.remove_miner(id);
+                        self.logger.info(format!("Foreman received an 'I Left' message from miner {}.", id));
+                    }
+                    _ => {}
                 }
             }
             //sleep(Duration::from_secs(5));
         }
-        self.finish();
     }
 
     fn wait(&self) {
@@ -145,13 +162,18 @@ impl Foreman {
         }
     }
 
-    fn finish(&mut self) {
-        self.miners_channels.iter().for_each(|(id, channel)|
+    fn finish(&mut self, handlers: Vec<JoinHandle<()>>) {
+        self.miners_channels.iter().for_each(|(id, channel)| {
+            self.logger.debug(format!("Foreman sending a 'ByeBye' message to miner {}.", id));
             channel.checked_send(
                 ByeBye,
                 Foreman::send_callback(id.clone(), self.logger.clone()),
-            )
-        );
+            );
+        });
+
+        for handler in handlers {
+            handler.join().unwrap();
+        }
 
         // TODO: Join handlers
         sleep(Duration::from_secs(1));
@@ -162,15 +184,14 @@ impl Foreman {
 
         println!();
         self.results_received.iter()
-        .for_each(|(id, gold)|{
-            println!("{}Miner number {} extracted {} gold{}", color::Fg(color::Green),id, gold,color::Fg(color::Reset));
-        });
+            .for_each(|(id, gold)| {
+                println!("{}Miner #{} extracted {} gold{}", color::Fg(color::Green), id, gold, color::Fg(color::Reset));
+            });
     }
 
     fn save_result(&mut self, (id, gold): RoundResults) {
-
         if let Some(x) = self.results_received.get_mut(&id) {
-            *x = *x+gold;
+            *x = *x + gold;
         }
     }
 

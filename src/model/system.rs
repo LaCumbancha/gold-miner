@@ -3,13 +3,12 @@ use std::thread::JoinHandle;
 use std::thread;
 
 use crate::model::foreman::Foreman;
-use crate::utils::logger::{LoggerWriter, Logger};
+use crate::utils::logger::{LoggerWriter, Logger, LoggerLevel};
 
 pub struct System {}
 
 impl System {
-
-    pub fn start(miners: i32, zones: i32) {
+    pub fn start(miners: i32, zones: i32, logger_level: LoggerLevel) {
         println!();
 
         let (logger_in, logger_out): (Sender<String>, Receiver<String>) = channel();
@@ -18,12 +17,10 @@ impl System {
             LoggerWriter::run(logger_out);
         });
 
-        let mut foreman: Foreman = Foreman::new(zones, Logger::new(logger_in));
-        foreman.hire_miners(miners);
-        foreman.start_mining();
+        let mut foreman: Foreman = Foreman::new(zones, Logger::new(logger_in, logger_level));
+        foreman.work(miners);
 
         drop(foreman);
         logger_handler.join().unwrap();
     }
-
 }

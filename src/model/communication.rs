@@ -2,7 +2,7 @@ use crate::model::map::Gold;
 use crate::model::map::MapSection;
 use crate::model::miner::MinerId;
 
-pub type  RoundResults = (MinerId,Gold);
+pub type RoundResults = (MinerId,Gold);
 
 #[derive(Debug, Clone)]
 pub enum MiningMessage {
@@ -12,6 +12,6 @@ pub enum MiningMessage {
     ILeft(MinerId),
     TransferGold(Gold),
     ByeBye,
-    Ready
+    Ready(MinerId)
 }
 
