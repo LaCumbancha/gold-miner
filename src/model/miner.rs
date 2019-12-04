@@ -201,7 +201,7 @@ impl Miner {
                 }
                 ByeBye => {
                     self.logger.info(format!("Miner {} finished working!", self.miner_id));
-                    println!("MINER #{} dug: {} and finished with {}", self.miner_id, self.gold_dug, self.gold_total);
+                    println!("MINER #{}: dug {} pieces of gold and finished with {}.", self.miner_id, self.gold_dug, self.gold_total);
                     break;
                 }
                 _ => {}
