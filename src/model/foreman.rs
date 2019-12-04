@@ -1,24 +1,23 @@
 extern crate termion;
 
-use termion::{color, style};
+use termion::style;
 
 use std::{thread, io};
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
-use std::thread::{JoinHandle, sleep};
+use std::thread::JoinHandle;
 
 extern crate rand;
 
 use rand::Rng;
 use rand::prelude::ThreadRng;
 
-use crate::utils::utils::CheckedSend;
+use crate::utils::extension::CheckedSend;
 use crate::model::miner::Miner;
 use crate::model::map::MapSection;
 use crate::model::communication::MiningMessage;
 use crate::model::communication::MiningMessage::*;
 use crate::utils::logger::Logger;
-use std::time::Duration;
 
 use crate::model::map::Gold;
 use crate::model::communication::RoundResults;
@@ -36,8 +35,8 @@ pub struct Foreman {
 
 impl Foreman {
     pub fn new(sections: i32, logger: Logger) -> Foreman {
-        println!("{}FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.{}", color::Fg(color::Yellow), style::Reset);
-        println!("{}FOREMAN: Today we'll be exploring this {} zones.{}", color::Fg(color::Yellow), sections, style::Reset);
+        println!("FOREMAN: Welcome to the Gold Camp! I'm the foreman, the man in charge. Hope we finally get some gold.");
+        println!("FOREMAN: Today we'll be exploring this {} zones.", sections);
 
         // Generating sections randomly.
         let mut random_generator: ThreadRng = rand::thread_rng();
@@ -60,7 +59,7 @@ impl Foreman {
     }
 
     pub fn work(&mut self, miners: i32) {
-        println!("{}FOREMAN: But first, we need some cheap manpower. We'll go to the town and get the first {} morons that show up.{}", color::Fg(color::Yellow), miners, style::Reset);
+        println!("FOREMAN: But first, we need some cheap manpower. We'll go to the town and get the first {} morons that show up.", miners);
 
         // Creating channels for every miner.
         let mut channels_in: HashMap<MinerId, Sender<MiningMessage>> = HashMap::new();
@@ -100,13 +99,13 @@ impl Foreman {
     }
 
     pub fn start_mining(&mut self) {
-        println!("{}FOREMAN: Ok, it's showtime. Let's get this shit done.{}", color::Fg(color::Yellow), style::Reset);
+        println!("FOREMAN: Ok, it's showtime. Let's get this shit done.");
 
         for section in self.sections.clone() {
             if self.miners_channels.len() == 1 { break; }
             println!();
-            println!("{}FOREMAN: Yo' filthy rats! Go find me some gold in Section {}!{}", color::Fg(color::Yellow), section.0, style::Reset);
-            println!("{}Press [ENTER] to make miners {}start{}{} digging{}", color::Fg(color::Red), style::Bold, style::Reset, color::Fg(color::Red), color::Fg(color::Reset));
+            println!("FOREMAN: Yo' filthy rats! Go find me some gold in Section {}!", section.0);
+            println!("(Press [ENTER] to make miners {}start{} digging)", style::Bold, style::Reset);
             self.wait();
             self.logger.info(format!("In Section {} there is {} probability of extracting gold.", section.0, 1.0 - section.1));
 
@@ -118,7 +117,7 @@ impl Foreman {
                 )
             });
 
-            println!("{}Press [ENTER] to make miners {}stop{}{} digging.{}", color::Fg(color::Red), style::Bold, style::Reset, color::Fg(color::Red), color::Fg(color::Reset));
+            println!("(Press [ENTER] to make miners {}stop{} digging)", style::Bold, style::Reset);
             self.wait();
 
             self.miners_channels.iter().for_each(|(id, channel)| {
@@ -175,15 +174,9 @@ impl Foreman {
         }
 
         // TODO: Join handlers
-        sleep(Duration::from_secs(1));
-        // for handler in self.thread_handlers.iter_mut() {
-        //     handler.join().unwrap();
-        // }
-        println!();
-        self.results_received.iter()
-            .for_each(|(id, gold)| {
-                println!("{}Miner #{} extracted {} gold{}", color::Fg(color::Green), id, gold, color::Fg(color::Reset));
-            });
+        self.results_received.iter().for_each(|(id, gold)| {
+            println!("Miner #{} extracted {} gold.", id, gold);
+        });
     }
 
     fn save_result(&mut self, (id, gold): RoundResults) {

@@ -11,7 +11,7 @@ use crate::model::communication::MiningMessage::*;
 use crate::model::map::Gold;
 use crate::model::map::SectionProbability;
 use crate::utils::logger::Logger;
-use crate::utils::utils::CheckedSend;
+use crate::utils::extension::CheckedSend;
 
 use std::cmp;
 

@@ -5,8 +5,8 @@ use std::sync::mpsc::Sender;
 use std::sync::mpsc::Receiver;
 use std::io::{Write, LineWriter};
 
-use crate::utils::utils::Logging;
-use crate::utils::utils::TimeLogged;
+use crate::utils::extension::Logging;
+use crate::utils::extension::TimeLogged;
 use core::fmt;
 
 static LOGS_FOLDER: &str = "./logs";
