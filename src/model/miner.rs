@@ -14,8 +14,6 @@ use crate::utils::logger::Logger;
 use crate::utils::utils::CheckedSend;
 
 use std::cmp;
-use std::time::Duration;
-use std::thread::{sleep};
 
 pub type MinerId = i32;
 
@@ -92,7 +90,7 @@ impl Miner {
         println!("MINER #{}: I've found {} pieces of gold!", self.miner_id, gold_dug);
     }
 
-    fn save_result(&mut self, (id, gold): RoundResults) {
+    fn save_result(&mut self, (id, gold): RoundResults) -> bool{
         self.round.results_received.insert(id, gold);
         if self.round.results_received.len() == self.adjacent_miners.len() - 1 { //All miners stoped and sended their results
             let (minor, major) = self.get_min_max_round_results();
@@ -115,19 +113,21 @@ impl Miner {
                                 Miner::send_callback(*id, self.logger.clone()),
                             )
                         });
-                    return;
+                    return true;
                 }
                 self.wait += 1;
                 if major[0].0 == self.miner_id {//this miner is the winner
                     self.wait += 1;
-                    return; //wait gold dugs
+                    return false; //wait gold dugs
                 }
             }
 
             //There is not loser or this miner is not the winner
             //says "I'm ready" to the foreman
             self.ready();
+            
         }
+        return false;
     }
 
     fn ready(&mut self) {
@@ -185,7 +185,9 @@ impl Miner {
                 },
                 ResultsNotification(results) => {
                     self.logger.debug(format!("Miner {} was informed that miner {} dug {} pieces of gold.", self.miner_id, results.0, results.1));
-                    self.save_result(results)
+                    if self.save_result(results) == true{
+                        break;
+                    }
                 },
                 ILeft(id) => {
                     self.logger.debug(format!("Miner {} received an 'I Left' message from miner {}.", self.miner_id, id));
@@ -232,7 +234,6 @@ impl Miner {
                 }
             }
             );
-        println!("menor: {} , mayor: {}", minor[0].0, major[0].0);
         return (minor, major);
     }
 }
