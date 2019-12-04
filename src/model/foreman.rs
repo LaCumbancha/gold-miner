@@ -30,7 +30,7 @@ pub struct Foreman {
     logger: Logger,
     receiving_channel: Receiver<MiningMessage>,
     channel_in_foreman: Sender<MiningMessage>,
-    results_received: HashMap<MinerId, Gold>,
+    results_received: HashMap<MinerId, (Gold,Gold)>, //(gold_dug,gold_total)
 }
 
 impl Foreman {
@@ -69,7 +69,7 @@ impl Foreman {
             self.miners_channels.insert(id, channel_in.clone());
             channels_in.insert(id, channel_in);
             channels_out.insert(id, channel_out);
-            self.results_received.insert(id, 0);
+            self.results_received.insert(id,( 0,0));
         }
         channels_in.insert(0, self.channel_in_foreman.clone());
 
@@ -133,9 +133,9 @@ impl Foreman {
                         self.logger.debug(format!("Foreman received an 'I'm Ready' message from miner {}.", id));
                         miners_ready += 1;
                     }
-                    ResultsNotification((id, gold)) => {
-                        self.logger.debug(format!("Foreman received {} pieces of gold from miner {}.", gold, id));
-                        self.save_result((id, gold));
+                    ResultsNotification((id, dug,total)) => {
+                        self.logger.debug(format!("Foreman received {} pieces of gold from miner {}.", dug, id));
+                        self.save_result((id, dug,total));
                     }
                     ILeft(id) => {
                         self.remove_miner(id);
@@ -173,14 +173,15 @@ impl Foreman {
 
         println!();
         println!("FOREMAN: Arrgg, what a lovely day. Let's see what you got me!");
-        self.results_received.iter().for_each(|(id, gold)| {
-            println!("MINER #{}: Extracted {} pieces of gold.", id, gold);
+        self.results_received.iter().for_each(|(id, (dug,total))| {
+            println!("MINER #{} extracted: {} and finished with {}", id, dug, total);
         });
     }
 
-    fn save_result(&mut self, (id, gold): RoundResults) {
-        if let Some(x) = self.results_received.get_mut(&id) {
-            *x = *x + gold;
+    fn save_result(&mut self, (id, gold_dug, total_gold): RoundResults) {
+        if let Some((dug,total)) = self.results_received.get_mut(&id) {
+            *dug = *dug + gold_dug;
+            *total = total_gold;
         }
     }
 

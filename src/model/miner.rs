@@ -65,7 +65,7 @@ impl Miner {
 
         self.round.results_received = HashMap::new();
         *self.round.gold_dug.lock().unwrap() = 0;
-
+        self.gold_dug = 0;
         let keep_mining = Arc::clone(&self.keep_mining);
         let gold_dug = Arc::clone(&self.round.gold_dug);
         let prob_clone = prob.clone();
@@ -80,21 +80,23 @@ impl Miner {
 
         let gold_dug = self.round.gold_dug.lock().unwrap();
         self.logger.info(format!("Miner {} stopped round! He got {} pieces of gold dug.", self.miner_id, *gold_dug));
+
+        self.gold_dug = *gold_dug;
+        self.gold_total += self.gold_dug;
         self.adjacent_miners.iter()
             .for_each(|(id, channel)|
-                channel.checked_send(
-                    ResultsNotification((self.miner_id, *gold_dug)),
+                      channel.checked_send(
+                    ResultsNotification((self.miner_id, self.gold_dug, self.gold_total )),
                     Miner::send_callback(*id, self.logger.clone()),
                 )
             );
 
-        self.gold_total += *gold_dug;
-        self.gold_dug += *gold_dug;
+
         println!("MINER #{}: I've found {} pieces of gold!", self.miner_id, gold_dug);
     }
 
-    fn save_result(&mut self, (id, gold): RoundResults) -> bool {
-        self.round.results_received.insert(id, gold);
+    fn save_result(&mut self, (id, gold_dug,gold_total): RoundResults) -> bool {
+        self.round.results_received.insert(id, gold_dug);
         if self.round.results_received.len() == self.adjacent_miners.len() - 1 { // All miners stopped and sent their results.
             let (minor, major) = self.get_min_max_round_results();
             if minor.len() == 1 {
@@ -201,7 +203,7 @@ impl Miner {
                 }
                 ByeBye => {
                     self.logger.info(format!("Miner {} finished working!", self.miner_id));
-                    println!("MINER #{} dug: {} and finished with {}", self.miner_id, self.gold_dug, self.gold_total);
+                   
                     break;
                 }
                 _ => {}
