@@ -203,7 +203,7 @@ impl Miner {
                 }
                 ByeBye => {
                     self.logger.info(format!("Miner {} finished working!", self.miner_id));
-                   
+
                     break;
                 }
                 _ => {}

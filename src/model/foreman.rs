@@ -4,7 +4,7 @@ use termion::style;
 
 use std::{thread, io};
 use std::sync::mpsc::{Sender, Receiver, channel};
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use std::thread::JoinHandle;
 
 extern crate rand;
@@ -29,8 +29,9 @@ pub struct Foreman {
     miners_channels: HashMap<MinerId, Sender<MiningMessage>>,
     logger: Logger,
     receiving_channel: Receiver<MiningMessage>,
-    channel_in_foreman: Sender<MiningMessage>,
-    results_received: HashMap<MinerId, (Gold,Gold)>, //(gold_dug,gold_total)
+//    results_received: HashMap<MinerId, (Gold,Gold)>, //(gold_dug,gold_total)
+    sending_channel: Sender<MiningMessage>,
+    results_received: BTreeMap<MinerId, (Gold,Gold)>,
 }
 
 impl Foreman {
@@ -53,8 +54,8 @@ impl Foreman {
             miners_channels: HashMap::new(),
             logger,
             receiving_channel: channel_out_foreman,
-            channel_in_foreman: channel_in_foreman,
-            results_received: HashMap::new(),
+            sending_channel: channel_in_foreman,
+            results_received: BTreeMap::new(),
         }
     }
 
@@ -71,7 +72,7 @@ impl Foreman {
             channels_out.insert(id, channel_out);
             self.results_received.insert(id,( 0,0));
         }
-        channels_in.insert(0, self.channel_in_foreman.clone());
+        channels_in.insert(0, self.sending_channel.clone());
 
         let handlers: Vec<JoinHandle<()>> = self.hire_miners(miners, channels_in, channels_out);
         self.start_mining();
