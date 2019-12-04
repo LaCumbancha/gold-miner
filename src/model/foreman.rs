@@ -88,7 +88,7 @@ impl Foreman {
             let miner_logger = self.logger.clone();
 
             self.logger.info(format!("Creating miner {}", id.clone()));
-            let handler: JoinHandle<()> = thread::spawn(move || {
+            let handler: JoinHandle<_> = thread::spawn(move || {
                 let mut miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels, miner_logger);
                 miner.work();
             });

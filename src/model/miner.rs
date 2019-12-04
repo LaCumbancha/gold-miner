@@ -90,7 +90,7 @@ impl Miner {
         println!("MINER #{}: I've found {} pieces of gold!", self.miner_id, gold_dug);
     }
 
-    fn save_result(&mut self, (id, gold): RoundResults) {
+    fn save_result(&mut self, (id, gold): RoundResults) -> bool{
         self.round.results_received.insert(id, gold);
         if self.round.results_received.len() == self.adjacent_miners.len() - 1 { //All miners stoped and sended their results
             let (minor, major) = self.get_min_max_round_results();
@@ -113,19 +113,21 @@ impl Miner {
                                 Miner::send_callback(*id, self.logger.clone()),
                             )
                         });
-                    return;
+                    return true;
                 }
                 self.wait += 1;
                 if major[0].0 == self.miner_id {//this miner is the winner
                     self.wait += 1;
-                    return; //wait gold dugs
+                    return false; //wait gold dugs
                 }
             }
 
             //There is not loser or this miner is not the winner
             //says "I'm ready" to the foreman
             self.ready();
+            
         }
+        return false;
     }
 
     fn ready(&mut self) {
@@ -183,7 +185,9 @@ impl Miner {
                 },
                 ResultsNotification(results) => {
                     self.logger.debug(format!("Miner {} was informed that miner {} dug {} pieces of gold.", self.miner_id, results.0, results.1));
-                    self.save_result(results)
+                    if self.save_result(results) == true{
+                        break;
+                    }
                 },
                 ILeft(id) => {
                     self.logger.debug(format!("Miner {} received an 'I Left' message from miner {}.", self.miner_id, id));
@@ -195,6 +199,7 @@ impl Miner {
                 },
                 ByeBye => {
                     self.logger.info(format!("Miner {} finished working!", self.miner_id));
+                    //sleep(Duration::from_secs(10));
                     break;
                 }
                 _ => {}
@@ -213,13 +218,17 @@ impl Miner {
             .for_each(|(id, gold)| {
                 if minor[0].1 > *gold {
                     minor.clear();
-                    minor.push((*id, *gold));
-                } else if minor[0].1 == *gold {
-                    minor.push((*id, *gold))
+                    minor.push((*id,*gold));
+                   // println!("el menor oro es del id {}", *id);
+                }else if minor[0].1 == *gold{
+                    minor.push((*id,*gold))
                 };
 
-                if major[0].1 <= *gold {//there is only winner
-                    let min_id = cmp::min(major[0].0, *id);
+                if major[0].1 <= *gold{//there is only winner
+                    let mut min_id = *id;
+                    if major[0].1 == *id{
+                        min_id = cmp::min(major[0].0, *id);
+                    }
                     major.clear();
                     major.push((min_id, *gold));
                 }
