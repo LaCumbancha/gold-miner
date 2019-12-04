@@ -83,7 +83,7 @@ impl Foreman {
             let miner_logger = self.logger.clone();
 
             self.logger.info(format!("Creating miner {}", id.clone()));
-            let handler: JoinHandle<()> = thread::spawn(move || {
+            let handler: JoinHandle<_> = thread::spawn(move || {
                 let mut miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels, miner_logger);
                 miner.work();
             });
@@ -129,6 +129,7 @@ impl Foreman {
                     _=>{}
                 }
             }
+            //sleep(Duration::from_secs(5));
         }
         self.finish();
     }
@@ -154,9 +155,11 @@ impl Foreman {
 
         // TODO: Join handlers
         sleep(Duration::from_secs(1));
-        // for handler in self.thread_handlers.iter_mut() {
-        //     handler.join().unwrap();
-        // }
+/*
+        for handler in self.thread_handlers {
+             let _ = handler.join().unwrap();
+         }*/
+
         println!();
         self.results_received.iter()
         .for_each(|(id, gold)|{

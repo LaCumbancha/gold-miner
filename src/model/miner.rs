@@ -14,6 +14,8 @@ use crate::utils::logger::Logger;
 use crate::utils::utils::CheckedSend;
 
 use std::cmp;
+use std::time::Duration;
+use std::thread::{sleep};
 
 pub type MinerId = i32;
 
@@ -110,6 +112,7 @@ impl Miner {
                             Miner::send_callback(*id, self.logger.clone())
                         )
                     });
+                    //sleep(Duration::from_secs(10));
                     return;
                 }
                 self.wait+=1;
@@ -176,6 +179,7 @@ impl Miner {
                 TransferGold(gold) => self.receive_gold(gold),
                 ByeBye => {
                     self.logger.info(format!("Miner {} finished working!", self.miner_id));
+                    //sleep(Duration::from_secs(10));
                     break;
                 },
                 _=>{}
@@ -195,17 +199,22 @@ impl Miner {
                 if minor[0].1 > *gold{
                     minor.clear();
                     minor.push((*id,*gold));
+                   // println!("el menor oro es del id {}", *id);
                 }else if minor[0].1 == *gold{
                     minor.push((*id,*gold))
                 };
 
                 if major[0].1 <= *gold{//there is only winner
-                    let min_id = cmp::min(major[0].0, *id);
+                    let mut min_id = *id;
+                    if major[0].1 == *id{
+                        min_id = cmp::min(major[0].0, *id);
+                    }
                     major.clear();
                     major.push((min_id,*gold));
                 }
             }
             );
+        println!("menor: {} , mayor: {}", minor[0].0, major[0].0);
         return (minor, major);
     }
 }
