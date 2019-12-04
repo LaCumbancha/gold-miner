@@ -12,7 +12,6 @@ use crate::model::map::Gold;
 use crate::model::map::SectionProbability;
 use crate::utils::logger::Logger;
 use crate::utils::utils::CheckedSend;
-
 pub type MinerId = i32;
 
 struct RoundStats {
@@ -74,6 +73,11 @@ impl Miner {
 
         let gold_dug = self.round.gold_dug.lock().unwrap();
         self.logger.info(format!("Miner {} stopped round! He got {} pieces of gold dug.", self.miner_id, *gold_dug));
+        // self.observers.iter()
+        //     .for_each(|channel|
+        //               channel.send(
+        //                   ResultsNotification((self.miner_id, *gold_dug))
+        //               ));
         self.adjacent_miners.iter()
             .for_each(|(id, channel)|
                 channel.checked_send(
@@ -82,11 +86,15 @@ impl Miner {
                 )
             );
 
+
         // TODO: Uncomment when communication with foreman is established.
         println!("MINER #{}: I've found {} pieces of gold!", self.miner_id, gold_dug);
     }
 
-    fn save_result(&mut self, (id, gold): RoundResults) { self.round.results_received.insert(id, gold); }
+
+    fn save_result(&mut self, (id, gold): RoundResults) {
+        self.round.results_received.insert(id, gold);
+    }
 
     fn remove_miner(&mut self, id: MinerId) {
         self.adjacent_miners.remove(&id);

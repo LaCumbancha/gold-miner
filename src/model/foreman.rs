@@ -2,7 +2,8 @@ use std::{thread, io};
 use std::sync::mpsc::{Sender, Receiver, channel};
 use std::collections::HashMap;
 use std::thread::{JoinHandle, sleep};
-
+use std::sync::Mutex;
+use std::sync::Arc;
 extern crate rand;
 
 use rand::Rng;
@@ -36,7 +37,6 @@ impl Foreman {
         for section_id in 1..=sections {
             region_sections.push((section_id, random_generator.gen_range(0.0, 1.0)));
         }
-
         Foreman {
             sections: region_sections,
             miners_channels: HashMap::new(),
@@ -47,6 +47,7 @@ impl Foreman {
 
     pub fn hire_miners(&mut self, miners: i32) {
         println!("FOREMAN: But first, we need some cheap manpower. We'll go to the town and get the first {} morons that show up.", miners);
+
 
         // Creating channels for every miner.
         let mut channels_in: HashMap<MinerId, Sender<MiningMessage>> = HashMap::new();
@@ -64,15 +65,15 @@ impl Foreman {
             let mut miner_adjacent_channels = channels_in.clone();
             miner_adjacent_channels.remove(&id);
             let miner_logger = self.logger.clone();
-
             self.logger.info(format!("Creating miner {}", id.clone()));
             let handler: JoinHandle<()> = thread::spawn(move || {
                 let mut miner: Miner = Miner::new(id, miner_receiving_channel, miner_adjacent_channels, miner_logger);
                 miner.work();
             });
-
             self.thread_handlers.push(handler);
         }
+
+
     }
 
     pub fn start_mining(&mut self) {
