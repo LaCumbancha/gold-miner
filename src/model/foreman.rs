@@ -105,10 +105,10 @@ impl Foreman {
             if self.miners_channels.len() == 1 { break; }
             println!();
             println!("FOREMAN: Yo' filthy rats! Go find me some gold in Section {}!", section.0);
-            println!("(Press [ENTER] to make miners {}start{} digging)", style::Bold, style::Reset);
-            self.wait();
+            println!("(Press [ENTER] to make miners {}start{} digging and [ENTER] again to make them {}stop{})", style::Bold, style::Reset, style::Bold, style::Reset);
             self.logger.info(format!("In Section {} there is {} probability of extracting gold.", section.0, 1.0 - section.1));
 
+            self.wait();
             self.miners_channels.iter().for_each(|(id, channel)| {
                 self.logger.debug(format!("Foreman sending a 'Start' message to miner {}.", id));
                 channel.checked_send(
@@ -117,9 +117,7 @@ impl Foreman {
                 )
             });
 
-            println!("(Press [ENTER] to make miners {}stop{} digging)", style::Bold, style::Reset);
             self.wait();
-
             self.miners_channels.iter().for_each(|(id, channel)| {
                 self.logger.debug(format!("Foreman sending a 'Stop' message to miner {}.", id));
                 channel.checked_send(
@@ -173,8 +171,10 @@ impl Foreman {
             handler.join().unwrap();
         }
 
+        println!();
+        println!("FOREMAN: Arrgg, what a lovely day. Let's see what you got me!");
         self.results_received.iter().for_each(|(id, gold)| {
-            println!("Miner #{} extracted {} gold.", id, gold);
+            println!("MINER #{}: Extracted {} pieces of gold.", id, gold);
         });
     }
 

@@ -8,7 +8,7 @@ use crate::utils::logger::LoggerLevel;
 use crate::utils::logger::LoggerLevel::DEBUG;
 
 static DEFAULT_ZONES: i32 = 5;
-static DEFAULT_MINERS: i32 = 5;
+static DEFAULT_MINERS: i32 = 9;
 static DEFAULT_LOGGER: LoggerLevel = DEBUG;
 
 pub fn run() {
