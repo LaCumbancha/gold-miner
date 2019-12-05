@@ -175,7 +175,7 @@ impl Foreman {
         println!();
         println!("FOREMAN: Arrgg, what a lovely day. Let's see what you got me!");
         self.results_received.iter().for_each(|(id, (dug,total))| {
-            println!("MINER #{} extracted: {} and finished with {}", id, dug, total);
+            println!("MINER #{}: extracted {} pieces of gold and finished with {}.", id, dug, total);
         });
     }
 
